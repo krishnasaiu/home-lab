@@ -7,7 +7,7 @@ Image=docker.io/library/caddy
 Exec=/usr/bin/caddy run --config /etc/caddy/Caddyfile
 # Change your email to the one to use for ACME registration
 Environment=EMAIL=example@example.tld LOG_FILE=/data/access.log
-Secret=duckdns_api_token,type=env,target=DUCKDNS_API_TOKEN
+# Secret=duckdns_api_token,type=env,target=DUCKDNS_API_TOKEN
 
 # This first volume bind is an executable with modules I need for DNS.
 # In this case, it has the Namecheap plugin attached to the regular
