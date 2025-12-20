@@ -1,0 +1,7 @@
+{
+#        admin fd/6
+}
+
+:80 {
+	reverse_proxy 10.89.0.10:80
+}

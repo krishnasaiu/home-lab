@@ -1,0 +1,33 @@
+[Unit]
+AssertPathExists=%h/.config/containers/storage/caddy/Caddyfile
+
+[Container]
+ContainerName=caddy
+Image=docker.io/library/caddy
+Exec=/usr/bin/caddy run --config /etc/caddy/Caddyfile
+# Change your email to the one to use for ACME registration
+Environment=EMAIL=example@example.tld LOG_FILE=/data/access.log
+Secret=duckdns_api_token,type=env,target=DUCKDNS_API_TOKEN
+
+# This first volume bind is an executable with modules I need for DNS.
+# In this case, it has the Namecheap plugin attached to the regular
+# caddy. If no modules are needed, it can be omitted.
+#Volume=%h/.config/containers/storage/caddy/caddy:/usr/bin/caddy
+Volume=%h/.config/containers/storage/caddy/Caddyfile:/etc/caddy/Caddyfile:Z
+Volume=%h/.config/containers/storage/caddy/caddy-config:/config:Z
+Volume=%h/.config/containers/storage/caddy/caddy-data:/data:Z
+Notify=true
+
+Network=dns.network
+IP=10.89.0.30
+PodmanArgs=--network-alias=caddy
+
+# Add these lines to publish ports from the container to the host
+PublishPort=8080:80/tcp
+PublishPort=8443:443/tcp
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always

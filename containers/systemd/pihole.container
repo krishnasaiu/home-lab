@@ -1,0 +1,25 @@
+[Unit]
+Description=Pi-hole DNS Server
+After=network-online.target
+
+[Container]
+ContainerName=pihole
+Environment=DNSMASQ_LISTENING=all VIRTUAL_HOST=192.168.50.120 PIHOLE_UID=999 PIHOLE_GID=999
+Environment=PIHOLE_DNS_1=10.89.0.20
+Secret=my_secret,type=env,target=FTLCONF_webserver_api_password
+Image=docker.io/pihole/pihole:latest
+PublishPort=53:53/tcp
+PublishPort=53:53/udp
+Network=dns.network
+IP=10.89.0.10
+PodmanArgs=--network-alias=pihole --dns=10.89.0.20
+Volume=%h/.config/containers/storage/pihole/etc-pihole:/etc/pihole:z
+Volume=%h/.config/containers/storage/pihole/etc-dnsmasq.d:/etc/dnsmasq.d:z
+Volume=%h/.config/containers/storage/pihole/logs:/var/log/pihole/pihole_debug.log:z
+Volume=%h/.config/containers/storage/pihole/pihole-resolv.conf:/etc/resolv.conf:Z
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
