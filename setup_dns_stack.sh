@@ -91,6 +91,15 @@ echo -e "${GREEN}[+] Setting up FTP Server...${NC}"
 mkdir -p "$HOME/ftp_data" "$HOME/ftp_logs"
 install_file "./containers/systemd/ftp.container"     "$HOME/.config/containers/systemd/ftp.container"
 
+# Home Assistant Container
+echo -e "${GREEN}[+] Setting up Home Assistant...${NC}"
+mkdir -p "$HOME/homeassistant_config"
+install_file "./containers/systemd/homeassistant.container" "$HOME/.config/containers/systemd/homeassistant.container"
+# Install initial config if not exists to ensure proxy works
+if [ ! -f "$HOME/homeassistant_config/configuration.yaml" ]; then
+    install_file "./containers/storage/homeassistant/configuration.yaml" "$HOME/homeassistant_config/configuration.yaml"
+fi
+
 # --- 4. Permissions ---
 echo -e "${GREEN}[+] Fixing permissions for Pi-hole (UID 999)...${NC}"
 # This ensures usage of the mapped user ID for rootless podman
@@ -122,6 +131,8 @@ ensure_port_open "53/udp"
 # Caddy
 ensure_port_open "8080/tcp"
 ensure_port_open "8443/tcp"
+# Home Assistant (via Caddy)
+ensure_port_open "8123/tcp"
 # FTP
 ensure_port_open "2121/tcp"
 ensure_port_open "2020/tcp"
@@ -134,6 +145,7 @@ systemctl --user enable --now dns-network.service
 systemctl --user enable --now unbound.service
 systemctl --user enable --now pihole.service
 systemctl --user enable --now ftp.service
+systemctl --user enable --now homeassistant.service
 
 echo -e "${GREEN}[+] Starting Caddy (might take a moment)...${NC}"
 systemctl --user enable --now caddy.service
