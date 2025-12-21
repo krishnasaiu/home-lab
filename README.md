@@ -17,6 +17,7 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
 | **Caddy** | `10.89.0.30` | 80, 443 | 8080, 8443 |
 | **FTP** | `10.89.0.40` | 20, 21, 21100-21110 | 2020, 2121, 21100-21110 |
 | **Home Assistant** | `10.89.0.50` | 8123 | 8123 |
+| **Grocy** | `10.89.0.60` | 9283 | 9283 |
 
 ---
 
@@ -42,6 +43,8 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
     sudo firewall-cmd --permanent --add-port=21100-21110/tcp
     # Home Assistant
     sudo firewall-cmd --permanent --add-port=8123/tcp
+    # Grocy
+    sudo firewall-cmd --permanent --add-port=9283/tcp
     # Reload
     sudo firewall-cmd --reload
     ```

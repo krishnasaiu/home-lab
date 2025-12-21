@@ -100,6 +100,11 @@ if [ ! -f "$HOME/homeassistant_config/configuration.yaml" ]; then
     install_file "./containers/storage/homeassistant/configuration.yaml" "$HOME/homeassistant_config/configuration.yaml"
 fi
 
+# Grocy Container
+echo -e "${GREEN}[+] Setting up Grocy...${NC}"
+mkdir -p "$HOME/grocy_config"
+install_file "./containers/systemd/grocy.container" "$HOME/.config/containers/systemd/grocy.container"
+
 # --- 4. Permissions ---
 echo -e "${GREEN}[+] Fixing permissions for Pi-hole (UID 999)...${NC}"
 # This ensures usage of the mapped user ID for rootless podman
@@ -133,6 +138,8 @@ ensure_port_open "8080/tcp"
 ensure_port_open "8443/tcp"
 # Home Assistant (via Caddy)
 ensure_port_open "8123/tcp"
+# Grocy (via Caddy)
+ensure_port_open "9283/tcp"
 # FTP
 ensure_port_open "2121/tcp"
 ensure_port_open "2020/tcp"
@@ -146,6 +153,7 @@ systemctl --user enable --now unbound.service
 systemctl --user enable --now pihole.service
 systemctl --user enable --now ftp.service
 systemctl --user enable --now homeassistant.service
+systemctl --user enable --now grocy.service
 
 echo -e "${GREEN}[+] Starting Caddy (might take a moment)...${NC}"
 systemctl --user enable --now caddy.service

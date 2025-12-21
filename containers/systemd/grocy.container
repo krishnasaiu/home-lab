@@ -1,0 +1,21 @@
+[Unit]
+Description=Grocy - ERP beyond your fridge
+After=network-online.target
+
+[Container]
+ContainerName=grocy
+Image=lscr.io/linuxserver/grocy:latest
+Network=dns.network
+IP=10.89.0.60
+PodmanArgs=--network-alias=grocy
+Volume=%h/grocy_config:/config:Z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Asia/Kolkata
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+TimeoutStartSec=900
