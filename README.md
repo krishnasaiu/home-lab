@@ -103,6 +103,14 @@ Ensure the following files are copied to their respective locations:
 Because Pi-hole runs as internal user `999`, you must map the volume ownership:
 ```bash
 podman unshare chown -R 999:999 ~/.config/containers/storage/pihole
+
+# If using symlinks, apply SELinux contexts and permissions:
+# Ensure correct permissions for config files
+find ~/.config/containers/storage -type d -exec chmod 755 {} \;
+find ~/.config/containers/storage -type f -exec chmod 644 {} \;
+
+# Apply SELinux label to allow containers to access the symlinked files
+chcon -R -t container_file_t ~/.config/containers/storage
 ```
 
 **Step 5: Start Services**

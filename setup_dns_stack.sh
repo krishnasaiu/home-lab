@@ -85,6 +85,12 @@ echo -e "${GREEN}[+] Fixing permissions for Pi-hole (UID 999)...${NC}"
 # This ensures usage of the mapped user ID for rootless podman
 podman unshare chown -R 999:999 "$HOME/.config/containers/storage/pihole"
 
+echo -e "${GREEN}[+] Setting file permissions and SELinux contexts...${NC}"
+find "$HOME/.config/containers/storage" -type d -exec chmod 755 {} \;
+find "$HOME/.config/containers/storage" -type f -exec chmod 644 {} \;
+# Apply container_file_t context for read access
+chcon -R -t container_file_t "$HOME/.config/containers/storage"
+
 # --- 5. Firewall Reminder ---
 if ! sudo firewall-cmd --list-ports | grep -q "8080/tcp"; then
     echo -e "${YELLOW}[INFO] Firewall ports might not be open.${NC}"
