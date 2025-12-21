@@ -153,6 +153,14 @@ curl -I http://localhost:8080/admin/
 journalctl --user -u caddy -n 20
 ```
 
+## Configuration Tips
+### Grocy: Change Currency to INR
+To update the currency without entering an interactive editor, use `sed` within the container's namespace:
+```bash
+podman unshare sed -i "s/Setting('CURRENCY', 'USD');/Setting('CURRENCY', 'INR');/" ~/grocy_config/data/config.php
+systemctl --user restart grocy
+```
+
 ### 2. Connect to FTP
 Since standard `ftp` clients are often missing from modern OSs (like macOS), use one of the following:
 
