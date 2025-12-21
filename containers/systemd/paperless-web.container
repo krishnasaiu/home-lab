@@ -1,0 +1,25 @@
+[Unit]
+Description=Paperless-ngx
+After=network-online.target paperless-redis.service
+Requires=paperless-redis.service
+
+[Container]
+ContainerName=paperless-web
+Image=ghcr.io/paperless-ngx/paperless-ngx:latest
+Network=dns.network
+IP=10.89.0.70
+PodmanArgs=--network-alias=paperless-web
+Volume=%h/paperless_data:/usr/src/paperless/data:Z
+Volume=%h/paperless_media:/usr/src/paperless/media:Z
+Environment=PAPERLESS_REDIS=redis://10.89.0.71:6379
+Environment=PAPERLESS_URL=http://10.89.0.70:8000
+Environment=USERMAP_UID=1000
+Environment=USERMAP_GID=1000
+Environment=PAPERLESS_TIME_ZONE=Asia/Kolkata
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+TimeoutStartSec=900

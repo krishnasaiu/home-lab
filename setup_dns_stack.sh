@@ -2,122 +2,59 @@
 set -e
 
 # ==============================================================================
-# Rootless Podman DNS Stack Setup Script
+# Rootless Podman Home Lab Setup Script
 # ==============================================================================
-# usage: ./setup_dns_stack.sh
-# description: Replicates the stack by copying files from the local 'containers' directory.
+# usage: ./setup_dns_stack.sh [--link] [service_name ...]
+# examples:
+#   ./setup_dns_stack.sh --link           # Installs EVERYTHING using symlinks
+#   ./setup_dns_stack.sh pihole ftp       # Installs only Pi-hole and FTP (copy)
+# ==============================================================================
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${GREEN}Starting DNS Stack Deployment...${NC}"
+USE_SYMLINK=false
 
-# --- 1. Validation Checks ---
+# --- Helper Functions ---
 
-# Check 1: Podman installed?
-if ! command -v podman &> /dev/null; then
-    echo -e "${RED}[ERROR] Podman is not installed.${NC} Please run: sudo dnf install podman"
-    exit 1
-fi
-
-# Check 2: Project Structure exists?
-if [ ! -d "./containers" ]; then
-    echo -e "${RED}[ERROR] Project directory './containers' not found.${NC}"
-    echo "Please run this script from the root of the project repository."
-    exit 1
-fi
-
-# Check 3: Secrets exist?
-if ! podman secret exists ftp_secret; then
-    echo -e "${RED}[ERROR] Secret 'ftp_secret' is missing.${NC}"
-    echo -e "Create it with: ${YELLOW}printf 'YOUR_PASSWORD' | podman secret create ftp_secret -${NC}"
-    exit 1
-fi
-
-if ! podman secret exists my_secret; then
-    echo -e "${RED}[ERROR] Secret 'my_secret' is missing.${NC}"
-    echo -e "Create it with: ${YELLOW}printf 'YOUR_PASSWORD' | podman secret create my_secret -${NC}"
-    exit 1
-fi
-
-if ! podman secret exists duckdns_api_token; then
-    echo -e "${YELLOW}[WARN] Secret 'duckdns_api_token' is missing.${NC} (Ignore if not using DuckDNS)"
-fi
-
-# --- 2. Directory Creation ---
-echo -e "${GREEN}[+] Creating host directories...${NC}"
-mkdir -p ~/.config/containers/systemd/
-mkdir -p ~/.config/containers/storage/pihole/{etc-pihole,etc-dnsmasq.d,logs}
-mkdir -p ~/.config/containers/storage/unbound
-mkdir -p ~/.config/containers/storage/caddy/{caddy-config,caddy-data,Caddyfile_dir}
-
-# --- 3. File Installation ---
-echo -e "${GREEN}[+] installing configuration files...${NC}"
-
-# Function to copy with backup
 install_file() {
     local src="$1"
     local dest="$2"
-
+    
     if [ ! -f "$src" ]; then
         echo -e "${RED}[ERROR] Missing source file: $src${NC}"
         exit 1
     fi
+    mkdir -p "$(dirname "$dest")" # Ensure parent dir exists
 
-    # Simple backup if dest exists and is different
-    if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
-        cp "$dest" "${dest}.bak"
+    if [ "$USE_SYMLINK" = true ]; then
+        local abs_src
+        abs_src=$(readlink -f "$src")
+        
+        # Check if destination exists
+        if [ -e "$dest" ] || [ -L "$dest" ]; then
+             # If it's already the correct symlink, skip
+             if [ -L "$dest" ] && [ "$(readlink -f "$dest")" = "$abs_src" ]; then
+                 echo "    Linked: $dest (Up to date)"
+                 return
+             fi
+             # Backup existing file/link
+             mv "$dest" "${dest}.bak"
+        fi
+        
+        ln -s "$abs_src" "$dest"
+        echo "    Linked: $dest -> $abs_src"
+    else
+        # Copy mode
+        if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
+            cp "$dest" "${dest}.bak"
+        fi
+        cp "$src" "$dest"
+        echo "    Installed: $dest"
     fi
-
-    cp "$src" "$dest"
-    echo "    Installed: $dest"
 }
-
-# Install Systemd Units
-install_file "./containers/systemd/dns.network"       "$HOME/.config/containers/systemd/dns.network"
-install_file "./containers/systemd/pihole.container"  "$HOME/.config/containers/systemd/pihole.container"
-install_file "./containers/systemd/unbound.container" "$HOME/.config/containers/systemd/unbound.container"
-install_file "./containers/systemd/caddy.container"   "$HOME/.config/containers/systemd/caddy.container"
-
-# Install Configs
-install_file "./containers/storage/unbound/unbound.conf"        "$HOME/.config/containers/storage/unbound/unbound.conf"
-install_file "./containers/storage/caddy/Caddyfile"             "$HOME/.config/containers/storage/caddy/Caddyfile"
-install_file "./containers/storage/pihole/pihole-resolv.conf"   "$HOME/.config/containers/storage/pihole/pihole-resolv.conf"
-
-# FTP Container
-echo -e "${GREEN}[+] Setting up FTP Server...${NC}"
-mkdir -p "$HOME/ftp_data" "$HOME/ftp_logs"
-install_file "./containers/systemd/ftp.container"     "$HOME/.config/containers/systemd/ftp.container"
-
-# Home Assistant Container
-echo -e "${GREEN}[+] Setting up Home Assistant...${NC}"
-mkdir -p "$HOME/homeassistant_config"
-install_file "./containers/systemd/homeassistant.container" "$HOME/.config/containers/systemd/homeassistant.container"
-# Install initial config if not exists to ensure proxy works
-if [ ! -f "$HOME/homeassistant_config/configuration.yaml" ]; then
-    install_file "./containers/storage/homeassistant/configuration.yaml" "$HOME/homeassistant_config/configuration.yaml"
-fi
-
-# Grocy Container
-echo -e "${GREEN}[+] Setting up Grocy...${NC}"
-mkdir -p "$HOME/grocy_config"
-install_file "./containers/systemd/grocy.container" "$HOME/.config/containers/systemd/grocy.container"
-
-# --- 4. Permissions ---
-echo -e "${GREEN}[+] Fixing permissions for Pi-hole (UID 999)...${NC}"
-# This ensures usage of the mapped user ID for rootless podman
-podman unshare chown -R 999:999 "$HOME/.config/containers/storage/pihole"
-
-echo -e "${GREEN}[+] Setting file permissions and SELinux contexts...${NC}"
-find "$HOME/.config/containers/storage" -type d -exec chmod 755 {} \;
-find "$HOME/.config/containers/storage" -type f -exec chmod 644 {} \;
-# Apply container_file_t context for read access
-chcon -R -t container_file_t "$HOME/.config/containers/storage"
-
-# --- 5. Firewall Configuration ---
-echo -e "${GREEN}[+] Configuring Firewall...${NC}"
 
 ensure_port_open() {
     local port=$1
@@ -130,38 +67,227 @@ ensure_port_open() {
     fi
 }
 
-# DNS
-ensure_port_open "53/tcp"
-ensure_port_open "53/udp"
-# Caddy
-ensure_port_open "8080/tcp"
-ensure_port_open "8443/tcp"
-# Home Assistant (via Caddy)
-ensure_port_open "8123/tcp"
-# Grocy (via Caddy)
-ensure_port_open "9283/tcp"
-# FTP
-ensure_port_open "2121/tcp"
-ensure_port_open "2020/tcp"
-ensure_port_open "21100-21110/tcp"
+check_prerequisites() {
+    echo -e "${GREEN}[+] Checking prerequisites...${NC}"
+    if ! command -v podman &> /dev/null; then
+        echo -e "${RED}[ERROR] Podman is not installed.${NC}"
+        exit 1
+    fi
+    if [ ! -d "./containers" ]; then
+        echo -e "${RED}[ERROR] Project directory './containers' not found.${NC}"
+        exit 1
+    fi
+    # Check secrets (soft check, warn if missing for generic use)
+    if ! podman secret exists ftp_secret; then
+         echo -e "${YELLOW}[WARN] Secret 'ftp_secret' is missing.${NC} (Required for FTP)"
+    fi
+}
 
-# --- 6. Activation ---
-echo -e "${GREEN}[+] Reloading systemd and starting services...${NC}"
-systemctl --user daemon-reload
-systemctl --user enable --now dns-network.service
-systemctl --user enable --now unbound.service
-systemctl --user enable --now pihole.service
-systemctl --user enable --now ftp.service
-systemctl --user enable --now homeassistant.service
-systemctl --user enable --now grocy.service
+# --- Service Functions ---
 
-echo -e "${GREEN}[+] Starting Caddy (might take a moment)...${NC}"
-systemctl --user enable --now caddy.service
+setup_base() {
+    echo -e "${GREEN}[+] Setting up Base Stack (Network, Caddy, Unbound)...${NC}"
+    
+    # 1. Directories
+    mkdir -p ~/.config/containers/systemd/
+    mkdir -p ~/.config/containers/storage/unbound
+    mkdir -p ~/.config/containers/storage/caddy/{caddy-config,caddy-data,Caddyfile_dir}
 
-# Final Check
-if systemctl --user is-active --quiet pihole.service; then
-    echo -e "${GREEN}[SUCCESS] Stack deployed successfully!${NC}"
-    echo "Admin Panel: http://localhost:8080/admin/"
+    # 2. Files
+    install_file "./containers/systemd/dns.network"       "$HOME/.config/containers/systemd/dns.network"
+    install_file "./containers/systemd/caddy.container"   "$HOME/.config/containers/systemd/caddy.container"
+    install_file "./containers/systemd/unbound.container" "$HOME/.config/containers/systemd/unbound.container"
+    install_file "./containers/storage/unbound/unbound.conf" "$HOME/.config/containers/storage/unbound/unbound.conf"
+    install_file "./containers/storage/caddy/Caddyfile"      "$HOME/.config/containers/storage/caddy/Caddyfile"
+    
+    # 3. Permissions (Unbound/Caddy config)
+    chcon -R -t container_file_t "$HOME/.config/containers/storage"
+
+    # 4. Firewall (Base ports)
+    ensure_port_open "8080/tcp"
+    ensure_port_open "8443/tcp" # Caddy
+    
+    # 5. Service Activation
+    systemctl --user daemon-reload
+    systemctl --user enable --now dns-network.service
+    systemctl --user enable --now unbound.service
+    systemctl --user start unbound.service
+    check_service_status "unbound.service"
+    
+    systemctl --user enable --now caddy.service
+    systemctl --user start caddy.service
+    check_service_status "caddy.service"
+}
+
+setup_pihole() {
+    echo -e "${GREEN}[+] Setting up Pi-hole...${NC}"
+    mkdir -p ~/.config/containers/storage/pihole/{etc-pihole,etc-dnsmasq.d,logs}
+    
+    install_file "./containers/systemd/pihole.container"  "$HOME/.config/containers/systemd/pihole.container"
+    install_file "./containers/storage/pihole/pihole-resolv.conf" "$HOME/.config/containers/storage/pihole/pihole-resolv.conf"
+    
+    # Fix Permissions
+    podman unshare chown -R 999:999 "$HOME/.config/containers/storage/pihole"
+    chcon -R -t container_file_t "$HOME/.config/containers/storage/pihole"
+    
+    ensure_port_open "53/tcp"
+    ensure_port_open "53/udp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now pihole.service
+    systemctl --user start pihole.service
+    check_service_status "pihole.service"
+}
+
+setup_ftp() {
+    echo -e "${GREEN}[+] Setting up FTP...${NC}"
+    mkdir -p "$HOME/ftp_data" "$HOME/ftp_logs"
+    install_file "./containers/systemd/ftp.container" "$HOME/.config/containers/systemd/ftp.container"
+    
+    ensure_port_open "2121/tcp"
+    ensure_port_open "2020/tcp"
+    ensure_port_open "21100-21110/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now ftp.service
+    systemctl --user start ftp.service
+    check_service_status "ftp.service"
+}
+
+setup_homeassistant() {
+    echo -e "${GREEN}[+] Setting up Home Assistant...${NC}"
+    mkdir -p "$HOME/homeassistant_config"
+    install_file "./containers/systemd/homeassistant.container" "$HOME/.config/containers/systemd/homeassistant.container"
+    
+    if [ ! -f "$HOME/homeassistant_config/configuration.yaml" ]; then
+        install_file "./containers/storage/homeassistant/configuration.yaml" "$HOME/homeassistant_config/configuration.yaml"
+    fi
+    
+    ensure_port_open "8123/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now homeassistant.service
+    systemctl --user start homeassistant.service
+    check_service_status "homeassistant.service"
+}
+
+setup_grocy() {
+    echo -e "${GREEN}[+] Setting up Grocy...${NC}"
+    mkdir -p "$HOME/grocy_config"
+    install_file "./containers/systemd/grocy.container" "$HOME/.config/containers/systemd/grocy.container"
+    
+    ensure_port_open "9283/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now grocy.service
+    systemctl --user start grocy.service
+    check_service_status "grocy.service"
+}
+
+check_service_status() {
+    local service="$1"
+    echo -n "    Verifying $service... "
+    if systemctl --user is-active --quiet "$service"; then
+        echo -e "${GREEN}active${NC}"
+    else
+        echo -e "${RED}failed${NC}"
+        echo "    Logs: journalctl --user -u $service -n 10 --no-pager"
+        return 1
+    fi
+}
+
+setup_vaultwarden() {
+    echo -e "${GREEN}[+] Setting up Vaultwarden (Bitwarden)...${NC}"
+    mkdir -p "$HOME/vaultwarden_data"
+    install_file "./containers/systemd/vaultwarden.container" "$HOME/.config/containers/systemd/vaultwarden.container"
+    
+    ensure_port_open "8001/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now vaultwarden.service
+    systemctl --user start vaultwarden.service
+    check_service_status "vaultwarden.service"
+}
+
+setup_komodo() {
+    echo -e "${GREEN}[+] Setting up Komodo...${NC}"
+    mkdir -p "$HOME/komodo_data"
+    install_file "./containers/storage/komodo/config.toml" "$HOME/.config/containers/storage/komodo/config.toml"
+    install_file "./containers/systemd/komodo.container" "$HOME/.config/containers/systemd/komodo.container"
+    
+    ensure_port_open "9120/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now komodo.service
+    systemctl --user start komodo.service
+    check_service_status "komodo.service"
+}
+
+setup_paperless() {
+    echo -e "${GREEN}[+] Setting up Paperless-ngx...${NC}"
+    mkdir -p "$HOME/paperless_data" "$HOME/paperless_media"
+    
+    install_file "./containers/systemd/paperless-redis.container" "$HOME/.config/containers/systemd/paperless-redis.container"
+    install_file "./containers/systemd/paperless-web.container" "$HOME/.config/containers/systemd/paperless-web.container"
+    
+    ensure_port_open "8000/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now paperless-redis.service
+    systemctl --user start paperless-redis.service
+    check_service_status "paperless-redis.service"
+    
+    systemctl --user enable --now paperless-web.service
+    systemctl --user start paperless-web.service
+    check_service_status "paperless-web.service"
+}
+
+# --- Main Execution ---
+
+PROJECT_SERVICES=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --link|-l)
+            USE_SYMLINK=true
+            shift
+            ;;
+        *)
+            PROJECT_SERVICES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+check_prerequisites
+
+if [ ${#PROJECT_SERVICES[@]} -eq 0 ]; then
+    # Default: Install ALL
+    setup_base
+    setup_pihole
+    setup_ftp
+    setup_homeassistant
+    setup_grocy
+    setup_vaultwarden
+    setup_komodo
+    setup_paperless
 else
-    echo -e "${RED}[ERROR] Pi-hole service failed to start. Check logs: podman logs pihole${NC}"
+    # Install requested components
+    for service in "${PROJECT_SERVICES[@]}"; do
+        case $service in
+            base) setup_base ;;
+            pihole) setup_pihole ;;
+            ftp) setup_ftp ;;
+            homeassistant|ha) setup_homeassistant ;;
+            grocy) setup_grocy ;;
+            vaultwarden|bitwarden) setup_vaultwarden ;;
+            komodo) setup_komodo ;;
+            paperless|ngx) setup_paperless ;;
+            *) echo -e "${RED}[ERROR] Unknown service: $service${NC}"; exit 1 ;;
+        esac
+    done
+    # Always restart Caddy at the end of a partial update to ensure config re-read
+    systemctl --user restart caddy.service
 fi
+
+echo -e "${GREEN}[SUCCESS] Requested services deployed.${NC}"

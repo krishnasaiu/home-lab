@@ -1,0 +1,24 @@
+[Unit]
+Description=Komodo Core
+After=network-online.target
+
+[Container]
+ContainerName=komodo
+Image=ghcr.io/moghtech/komodo-core:latest
+Network=dns.network
+IP=10.89.0.90
+PodmanArgs=--network-alias=komodo
+Volume=%h/komodo_data:/config:Z
+# Mount Podman socket for container management
+Volume=%t/podman/podman.sock:/var/run/docker.sock:z
+# Mount Config File
+Volume=%h/.config/containers/storage/komodo/config.toml:/config/config.toml:Z
+Environment=KOMODO_BIND_IP=0.0.0.0
+Environment=KOMODO_PORT=9120
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+TimeoutStartSec=900

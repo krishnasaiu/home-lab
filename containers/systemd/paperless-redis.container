@@ -1,0 +1,17 @@
+[Unit]
+Description=Redis for Paperless-ngx
+After=network-online.target
+
+[Container]
+ContainerName=paperless-redis
+Image=docker.io/library/redis:7
+Network=dns.network
+IP=10.89.0.71
+PodmanArgs=--network-alias=paperless-redis
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always
+TimeoutStartSec=900

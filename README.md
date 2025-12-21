@@ -18,6 +18,9 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
 | **FTP** | `10.89.0.40` | 20, 21, 21100-21110 | 2020, 2121, 21100-21110 |
 | **Home Assistant** | `10.89.0.50` | 8123 | 8123 |
 | **Grocy** | `10.89.0.60` | 9283 | 9283 |
+| **Vaultwarden** | `10.89.0.80` | 80 | 8001 |
+| **Komodo** | `10.89.0.90` | 9120 | 9120 |
+| **Paperless** | `10.89.0.70` | 8000 | 8000 |
 
 ---
 
@@ -45,6 +48,10 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
     sudo firewall-cmd --permanent --add-port=8123/tcp
     # Grocy
     sudo firewall-cmd --permanent --add-port=9283/tcp
+    # New Services
+    sudo firewall-cmd --permanent --add-port=8001/tcp  # Vaultwarden
+    sudo firewall-cmd --permanent --add-port=9120/tcp  # Komodo
+    sudo firewall-cmd --permanent --add-port=8000/tcp  # Paperless
     # Reload
     sudo firewall-cmd --reload
     ```
@@ -110,31 +117,23 @@ Ensure the following files are copied to their respective locations:
     *   `caddy/Caddyfile`
     *   `pihole/pihole-resolv.conf` (Content: `nameserver 10.89.0.20`)
 
-**Step 4: Fix Permissions**
-Because Pi-hole runs as internal user `999`, you must map the volume ownership:
+**Step 4: Deploy Stack**
+The setup script automates permissions, firewall, and service startup. It also supports modular installation.
+
 ```bash
-podman unshare chown -R 999:999 ~/.config/containers/storage/pihole
+# Option A: Install EVERYTHING (Default)
+./setup_dns_stack.sh
 
-# If using symlinks, apply SELinux contexts and permissions:
-# Ensure correct permissions for config files
-find ~/.config/containers/storage -type d -exec chmod 755 {} \;
-find ~/.config/containers/storage -type f -exec chmod 644 {} \;
-
-# Apply SELinux label to allow containers to access the symlinked files
-chcon -R -t container_file_t ~/.config/containers/storage
+# Option B: Install specific services
+./setup_dns_stack.sh vaultwarden komodo paperless
 ```
 
-**Step 5: Start Services**
-```bash
-# Reload Systemd to generate units
-systemctl --user daemon-reload
-
-# Enable and Start Stack
-systemctl --user enable --now dns-network.service
-systemctl --user enable --now unbound.service
-systemctl --user enable --now pihole.service
-systemctl --user enable --now caddy.service
-```
+The script will:
+1.  Check prerequisites.
+2.  Install Quadlet files.
+3.  Set permissions and SELinux contexts.
+4.  Configure Firewall.
+5.  Start Systemd services.
 
 ---
 
