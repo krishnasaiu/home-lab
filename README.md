@@ -15,6 +15,7 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
 | **Pi-hole** | `10.89.0.10` | 80, 53 | 53 (UDP/TCP) |
 | **Unbound** | `10.89.0.20` | 53 | - |
 | **Caddy** | `10.89.0.30` | 80, 443 | 8080, 8443 |
+| **FTP** | `10.89.0.40` | 20, 21, 21100-21110 | 2020, 2121, 21100-21110 |
 
 ---
 
@@ -34,6 +35,10 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
     # Caddy Proxy Ports
     sudo firewall-cmd --permanent --add-port=8080/tcp
     sudo firewall-cmd --permanent --add-port=8443/tcp
+    # FTP Ports
+    sudo firewall-cmd --permanent --add-port=2121/tcp
+    sudo firewall-cmd --permanent --add-port=2020/tcp
+    sudo firewall-cmd --permanent --add-port=21100-21110/tcp
     # Reload
     sudo firewall-cmd --reload
     ```
@@ -142,7 +147,23 @@ curl -I http://localhost:8080/admin/
 journalctl --user -u caddy -n 20
 ```
 
-### 2. Verify Proxy Enforcement (Security)
+### 2. Connect to FTP
+Since standard `ftp` clients are often missing from modern OSs (like macOS), use one of the following:
+
+*   **GUI Clients (Recommended)**: FileZilla, Cyberduck, or WinSCP.
+    *   **Protocol**: FTP (File Transfer Protocol)
+    *   **Encryption**: Use "Only use plain FTP (insecure)" or "Require explicit FTP over TLS" if configured.
+    *   **Port**: `2121`
+*   **macOS Finder**:
+    *   `Go` -> `Connect to Server` (Cmd+K)
+    *   Address: `ftp://192.168.50.120:2121`
+    *   *Note: Finder is often Read-Only.*
+*   **Command Line (macOS)**:
+    *   Install generic ftp: `brew install inetutils`
+    *   Or use `lftp`: `brew install lftp`
+    *   Connect: `ftp -P 2121 192.168.50.120`
+
+### 3. Verify Proxy Enforcement (Security)
 Ensure Pi-hole cannot be accessed directly, forcing all traffic through Caddy.
 ```bash
 # Try to access Pi-hole's internal port directly from Host (Should FAIL)

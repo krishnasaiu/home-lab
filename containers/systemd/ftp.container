@@ -1,0 +1,34 @@
+[Unit]
+Description=vsftpd FTP Server
+After=network-online.target
+
+[Container]
+ContainerName=ftp
+Image=docker.io/fauria/vsftpd
+Network=dns.network
+IP=10.89.0.40
+PodmanArgs=--network-alias=ftp
+
+# Environment Variables
+Environment=FTP_USER=ftpuser
+# Use the secret explicitly environment variable
+Secret=ftp_secret,type=env,target=FTP_PASS
+Environment=PASV_ADDRESS=192.168.50.120
+Environment=PASV_MIN_PORT=21100
+Environment=PASV_MAX_PORT=21110
+
+# Volumes
+Volume=%h/ftp_data:/home/vsftpd:Z
+Volume=%h/ftp_logs:/var/log/vsftpd:Z
+
+# Publish Ports
+# Rootless Podman cannot bind ports < 1024. Mapping to high ports on host.
+PublishPort=2020:20/tcp
+PublishPort=2121:21/tcp
+PublishPort=21100-21110:21100-21110/tcp
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=always

@@ -30,6 +30,12 @@ if [ ! -d "./containers" ]; then
 fi
 
 # Check 3: Secrets exist?
+if ! podman secret exists ftp_secret; then
+    echo -e "${RED}[ERROR] Secret 'ftp_secret' is missing.${NC}"
+    echo -e "Create it with: ${YELLOW}printf 'YOUR_PASSWORD' | podman secret create ftp_secret -${NC}"
+    exit 1
+fi
+
 if ! podman secret exists my_secret; then
     echo -e "${RED}[ERROR] Secret 'my_secret' is missing.${NC}"
     echo -e "Create it with: ${YELLOW}printf 'YOUR_PASSWORD' | podman secret create my_secret -${NC}"
@@ -80,6 +86,11 @@ install_file "./containers/storage/unbound/unbound.conf"        "$HOME/.config/c
 install_file "./containers/storage/caddy/Caddyfile"             "$HOME/.config/containers/storage/caddy/Caddyfile"
 install_file "./containers/storage/pihole/pihole-resolv.conf"   "$HOME/.config/containers/storage/pihole/pihole-resolv.conf"
 
+# FTP Container
+echo -e "${GREEN}[+] Setting up FTP Server...${NC}"
+mkdir -p "$HOME/ftp_data" "$HOME/ftp_logs"
+install_file "./containers/systemd/ftp.container"     "$HOME/.config/containers/systemd/ftp.container"
+
 # --- 4. Permissions ---
 echo -e "${GREEN}[+] Fixing permissions for Pi-hole (UID 999)...${NC}"
 # This ensures usage of the mapped user ID for rootless podman
@@ -92,9 +103,9 @@ find "$HOME/.config/containers/storage" -type f -exec chmod 644 {} \;
 chcon -R -t container_file_t "$HOME/.config/containers/storage"
 
 # --- 5. Firewall Reminder ---
-if ! sudo firewall-cmd --list-ports | grep -q "8080/tcp"; then
+if ! sudo firewall-cmd --list-ports | grep -q "2121/tcp"; then
     echo -e "${YELLOW}[INFO] Firewall ports might not be open.${NC}"
-    echo "Ensure ports 53, 8080, 8443 are open using firewall-cmd."
+    echo "Ensure ports 53 (UDP/TCP), 8080, 8443, 2020, 2121, and 21100-21110 are open."
 fi
 
 # --- 6. Activation ---
@@ -103,6 +114,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now dns-network.service
 systemctl --user enable --now unbound.service
 systemctl --user enable --now pihole.service
+systemctl --user enable --now ftp.service
 
 echo -e "${GREEN}[+] Starting Caddy (might take a moment)...${NC}"
 systemctl --user enable --now caddy.service
