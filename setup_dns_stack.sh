@@ -102,11 +102,30 @@ find "$HOME/.config/containers/storage" -type f -exec chmod 644 {} \;
 # Apply container_file_t context for read access
 chcon -R -t container_file_t "$HOME/.config/containers/storage"
 
-# --- 5. Firewall Reminder ---
-if ! sudo firewall-cmd --list-ports | grep -q "2121/tcp"; then
-    echo -e "${YELLOW}[INFO] Firewall ports might not be open.${NC}"
-    echo "Ensure ports 53 (UDP/TCP), 8080, 8443, 2020, 2121, and 21100-21110 are open."
-fi
+# --- 5. Firewall Configuration ---
+echo -e "${GREEN}[+] Configuring Firewall...${NC}"
+
+ensure_port_open() {
+    local port=$1
+    if ! sudo firewall-cmd --list-ports | grep -q "$port"; then
+        echo -e "    Opening port ${YELLOW}$port${NC}..."
+        sudo firewall-cmd --permanent --add-port="$port" > /dev/null
+        sudo firewall-cmd --reload > /dev/null
+    else
+        echo -e "    Port $port is already open."
+    fi
+}
+
+# DNS
+ensure_port_open "53/tcp"
+ensure_port_open "53/udp"
+# Caddy
+ensure_port_open "8080/tcp"
+ensure_port_open "8443/tcp"
+# FTP
+ensure_port_open "2121/tcp"
+ensure_port_open "2020/tcp"
+ensure_port_open "21100-21110/tcp"
 
 # --- 6. Activation ---
 echo -e "${GREEN}[+] Reloading systemd and starting services...${NC}"
