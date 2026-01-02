@@ -18,10 +18,11 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
 | **FTP** | `10.89.0.40` | 20, 21, 21100-21110 | 2020, 2121, 21100-21110 |
 | **Home Assistant** | `10.89.0.50` | 8123 | 8123 |
 | **Grocy** | `10.89.0.60` | 9283 | 9283 |
+| **Paperless** | `10.89.0.70` | 8000 | 8000 |
+| **Paperless-Redis** | `10.89.0.71` | 6379 | 6379 |
 | **Vaultwarden** | `10.89.0.80` | 80 | 8001 |
 | **Komodo** | `10.89.0.90` | 9120 | 9120 |
-| **Paperless** | `10.89.0.70` | 8000 | 8000 |
-
+| **Dispatcharr** | `10.89.0.100` | 9191 | 9191 |
 ---
 
 ## 3. Replication Guide
@@ -51,6 +52,7 @@ This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** 
     # New Services
     sudo firewall-cmd --permanent --add-port=8001/tcp  # Vaultwarden
     sudo firewall-cmd --permanent --add-port=9120/tcp  # Komodo
+    sudo firewall-cmd --permanent --add-port=9191/tcp  # Dispatcharr
     sudo firewall-cmd --permanent --add-port=8000/tcp  # Paperless
     # Reload
     sudo firewall-cmd --reload

@@ -242,6 +242,20 @@ setup_paperless() {
     check_service_status "paperless-web.service"
 }
 
+setup_dispatcharr() {
+    echo -e "${GREEN}[+] Setting up Dispatcharr...${NC}"
+    mkdir -p ~/.config/storage/dispatcharr
+    
+    install_file "./containers/systemd/dispatcharr.container" "$HOME/.config/containers/systemd/dispatcharr.container"
+    
+    ensure_port_open "9191/tcp"
+    
+    systemctl --user daemon-reload
+    systemctl --user enable --now dispatcharr.service
+    systemctl --user start dispatcharr.service
+    check_service_status "dispatcharr.service"
+}
+
 # --- Main Execution ---
 
 PROJECT_SERVICES=()
@@ -270,6 +284,7 @@ if [ ${#PROJECT_SERVICES[@]} -eq 0 ]; then
     setup_grocy
     setup_vaultwarden
     setup_komodo
+    setup_dispatcharr
     setup_paperless
 else
     # Install requested components
@@ -282,6 +297,7 @@ else
             grocy) setup_grocy ;;
             vaultwarden|bitwarden) setup_vaultwarden ;;
             komodo) setup_komodo ;;
+            dispatcharr) setup_dispatcharr ;;
             paperless|ngx) setup_paperless ;;
             *) echo -e "${RED}[ERROR] Unknown service: $service${NC}"; exit 1 ;;
         esac

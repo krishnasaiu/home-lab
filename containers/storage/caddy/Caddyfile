@@ -14,6 +14,10 @@ http://:9283 {
     reverse_proxy 10.89.0.60:80
 }
 
+http://:8000 {
+    reverse_proxy 10.89.0.70:8000
+}
+
 # Vaultwarden (HTTPS required for Web Crypto API)
 https://:8001 {
     tls internal
@@ -24,6 +28,7 @@ http://:9120 {
     reverse_proxy 10.89.0.90:9120
 }
 
-http://:8000 {
-    reverse_proxy 10.89.0.70:8000
+http://:9191 {
+    reverse_proxy 10.89.0.100:9191
 }
+
