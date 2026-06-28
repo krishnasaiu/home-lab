@@ -10,8 +10,8 @@ admin:
   passwordKey: "password"
 
 # DNS Settings
-# Configure Pi-hole to use Unbound running inside the cluster
-DNS1: "unbound.default.svc.cluster.local"
+# Configure Pi-hole to use the Unbound sidecar container running on localhost port 5335
+DNS1: "127.0.0.1#5335"
 DNS2: ""
 
 # Service Configuration
@@ -60,3 +60,32 @@ resources:
   requests:
     cpu: 100m
     memory: 256Mi
+
+# Unbound sidecar container configuration
+extraContainers:
+  - name: unbound
+    image: docker.io/mvance/unbound:latest
+    ports:
+      - containerPort: 5335
+        name: dns-udp
+        protocol: UDP
+      - containerPort: 5335
+        name: dns-tcp
+        protocol: TCP
+    volumeMounts:
+      - name: unbound-config-volume
+        mountPath: /opt/unbound/etc/unbound/unbound.conf
+        subPath: unbound.conf
+    resources:
+      limits:
+        cpu: 250m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+extraVolumes:
+  - name: unbound-config-volume
+    configMap:
+      name: unbound-config
+
