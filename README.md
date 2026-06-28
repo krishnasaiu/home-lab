@@ -14,8 +14,30 @@ The repository is organized as follows:
 
 ## 3. Replication & Setup Guide (Phase A & B)
 
+### Step 0: Host OS Initialization (Hostname & Cockpit)
+Before installing Kubernetes, initialize the server hostname and install the Cockpit management console along with the 45Drives visual file manager plugin:
+
+```bash
+# 1. Update Hostname & Local Networking Resolver
+sudo hostnamectl set-hostname homelab
+sudo sed -i 's/127.0.1.1.*/127.0.1.1   homelab/g' /etc/hosts
+
+# 2. Install Cockpit & Core Utilities
+sudo apt update
+sudo apt install -y cockpit cockpit-podman wget
+
+# 3. Add 45Drives Visual File Manager Plugin (Cockpit Navigator)
+wget https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.8/cockpit-navigator_0.5.8-1focal_all.deb
+sudo apt install -y ./cockpit-navigator_0.5.8-1focal_all.deb
+rm cockpit-navigator_0.5.8-1focal_all.deb
+
+# 4. Enable and start the Cockpit web service (Port 9090)
+sudo systemctl enable --now cockpit.socket
+```
+
 ### Step 1: Debian Machine Bootstrapping
-Run the bootstrap script to install K3s (with default Traefik ingress disabled for custom reverse-proxy control) and configure `kubectl` permissions for user `krishna`:
+Run the bootstrap script to install K3s and configure `kubectl` permissions for the `krishna` user:
+
 ```bash
 # Clone the repository
 git clone git@github.com:krishnasaiu/home-lab.git
