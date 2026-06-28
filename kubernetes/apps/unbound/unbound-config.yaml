@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unbound-config
+  namespace: default
+data:
+  unbound.conf: |
+    server:
+        verbosity: 1
+        interface: 0.0.0.0@53
+        port: 53
+        do-ip4: yes
+        do-udp: yes
+        do-tcp: yes
+        
+        # May be set to yes if you have native IPv6 connectivity
+        do-ip6: no
+
+        # Trust anchor file for DNSSEC validation
+        auto-trust-anchor-file: "/var/lib/unbound/root.key"
+
+        # Buffer size for DNS flag day compliance
+        edns-buffer-size: 1232
+
+        # Perform DNSSEC validation
+        harden-dnssec-stripped: yes
+        harden-glue: yes
+        harden-below-nxdomain: yes
+
+        # Minimize info sent to upstream servers for privacy
+        qname-minimisation: yes
+
+        # Capitalization randomization (disabled to prevent DNSSEC compatibility issues)
+        use-caps-for-id: no
+
+        # Access control - allow requests from host LAN and cluster pod networks
+        access-control: 127.0.0.0/8 allow
+        access-control: 10.0.0.0/8 allow
+        access-control: 172.16.0.0/12 allow
+        access-control: 192.168.0.0/16 allow
+
+        # Caching & performance tuning
+        cache-min-ttl: 300
+        cache-max-ttl: 86400
+        prefetch: yes
+        num-threads: 1
+        so-reuseport: yes
+
+        # Hide server details
+        hide-identity: yes
+        hide-version: yes
+
+        # Private addresses mapping (prevents DNS rebinding attacks)
+        private-address: 10.0.0.0/8
+        private-address: 172.16.0.0/12
+        private-address: 192.168.0.0/16
+        private-address: 169.254.0.0/16
+        private-address: fd00::/8
+        private-address: fe80::/10

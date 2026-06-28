@@ -10,9 +10,9 @@ admin:
   passwordKey: "password"
 
 # DNS Settings
-# Configure Pi-hole to use Unbound (if running in cluster) or upstream DNS
-DNS1: "1.1.1.1" # Primary upstream DNS (e.g. Cloudflare)
-DNS2: "8.8.8.8" # Secondary upstream DNS (e.g. Google)
+# Configure Pi-hole to use Unbound running inside the cluster
+DNS1: "unbound.default.svc.cluster.local"
+DNS2: ""
 
 # Service Configuration
 # Expose DNS (UDP/TCP) and Web Dashboard

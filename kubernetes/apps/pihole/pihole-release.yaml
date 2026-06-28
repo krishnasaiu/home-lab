@@ -14,8 +14,8 @@ spec:
       enabled: true
       existingSecret: "pihole-admin"
       passwordKey: "password"
-    DNS1: "1.1.1.1"
-    DNS2: "8.8.8.8"
+    DNS1: "unbound.default.svc.cluster.local"
+    DNS2: ""
     serviceDns:
       type: LoadBalancer
       port: 53
