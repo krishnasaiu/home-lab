@@ -101,3 +101,33 @@ Check logs:
 ```bash
 tail -f /var/log/homelab-git-sync.log
 ```
+
+---
+
+## 6. Cluster Management using K9s (TUI)
+K9s is a terminal-based user interface to interact with your Kubernetes cluster. It is completely open-source, fast, lightweight, and keyboard-driven.
+
+### Installation
+*   **On macOS (Local Machine)**:
+    ```bash
+    brew install k9s
+    ```
+*   **On Debian (Server Host)**:
+    ```bash
+    # Install via webinstall.dev
+    curl -sS https://webinstall.dev/k9s | bash
+    ```
+
+### Usage
+Ensure your `KUBECONFIG` is set, then launch the UI:
+```bash
+k9s
+```
+
+*   **Navigation**: Use arrow keys or `j`/`k` to navigate.
+*   **Commands**: Press `:` to open command mode:
+    *   `:pods` - View active Pods across namespaces.
+    *   `:nodes` - View K3s node status.
+    *   `:secrets` - View Kubernetes secrets.
+    *   `:logs` - View log output for selected pods.
+*   **Keys**: Press `?` to show the full list of keyboard shortcuts.
