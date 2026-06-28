@@ -24,6 +24,15 @@ serviceWeb:
   type: ClusterIP # Keep dashboard internal, proxy via Caddy or Portainer Ingress
   port: 80
 
+# Ingress configuration to expose the web dashboard via Traefik
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - pihole.homelab
+  path: /
+
 # Environment Variables
 extraEnvVars:
   TZ: "Asia/Kolkata"

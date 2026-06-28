@@ -21,6 +21,14 @@ spec:
     serviceWeb:
       type: ClusterIP
       port: 80
+    ingress:
+      enabled: true
+      annotations:
+        kubernetes.io/ingress.class: traefik
+      hosts:
+        - pihole.homelab
+      path: /
+
     extraEnvVars:
       TZ: "Asia/Kolkata"
       FTLCONF_dns_listeningMode: "all"

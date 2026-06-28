@@ -13,7 +13,7 @@ echo -e "${GREEN}[+] Starting K3s Installation...${NC}"
 # 1. Install K3s (disable traefik by default if using custom proxy like Caddy)
 # Disable servicelb/traefik if we want to run custom ingress or port forwards
 if ! command -v k3s &> /dev/null; then
-    curl -sfL https://get.k3s.io | sh -s - --disable traefik
+    curl -sfL https://get.k3s.io | sh -
 else
     echo "K3s is already installed."
 fi
