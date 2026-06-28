@@ -159,3 +159,37 @@ k9s
     *   `:secrets` - View Kubernetes secrets.
     *   `:logs` - View log output for selected pods.
 *   **Keys**: Press `?` to show the full list of keyboard shortcuts.
+
+---
+
+## 7. Troubleshooting & Homelab Gotchas
+
+Here are the manual steps and gotchas we encountered and solved during the setup:
+
+### A. K3s Symlink Watcher Gotcha
+*   **The Issue**: K3s watches for changes inside `/var/lib/rancher/k3s/server/manifests/`. However, the Go file-watcher does **not** detect modifications made to the target files of symlinks.
+*   **The Fix**: Whenever you modify the Helm manifests locally in your git workspace, you must **touch** the symlink on the Debian host to update its modification time, forcing K3s to redeploy:
+    ```bash
+    sudo touch /var/lib/rancher/k3s/server/manifests/pihole-release.yaml
+    ```
+
+### B. Git-Sync Service Setup
+*   **Git Identity**: Git requires an email and name to auto-generate commits. Set these on the Debian host:
+    ```bash
+    git config --global user.email "your-email@example.com"
+    git config --global user.name "Your Name"
+    ```
+*   **Use SSH Remote URL**: The Debian clone must use an SSH remote URL, as HTTPS clones will prompt for credentials in the background and fail:
+    ```bash
+    cd ~/home-lab
+    git remote set-url origin git@github.com:krishnasaiu/home-lab.git
+    ```
+
+### C. Unbound ConfigMap Order
+*   Before K3s triggers the Pi-hole sidecar deployment, the ConfigMap containing `unbound.conf` must exist in the cluster so the container does not crash looking for the volume:
+    ```bash
+    kubectl apply -f kubernetes/apps/unbound/unbound-config.yaml
+    ```
+
+### D. Router DNS Configuration
+*   **LAN DHCP DNS (Recommended)**: Point devices to your Pi-hole IP (`192.168.50.120`) via the router's **LAN -> DHCP Server -> DNS Server** settings (rather than WAN settings). This prevents router DNS caching and allows Pi-hole to report queries per individual client instead of listing everything under the router's IP.
