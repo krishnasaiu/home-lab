@@ -6,7 +6,7 @@ This project manages a self-hosted Kubernetes homelab running on **Debian Stable
 ## 2. Directory Layout
 The repository is organized as follows:
 *   **`bootstrap/`**: Scripts to initialize the OS, install K3s, configure permissions, and setup base configurations.
-*   **`kubernetes/system/`**: System infrastructure services (e.g. Portainer CE, custom Ingress controllers).
+*   **`kubernetes/system/`**: System infrastructure services (e.g. namespaces, ingress configurations, storage configs).
 *   **`kubernetes/apps/`**: User-facing application workloads (e.g. Pi-hole DNS resolver).
 *   **`scripts/`**: Automation tools and active sync scripts.
 
@@ -43,13 +43,7 @@ cat ~/.ssh/id_ed25519.pub
 ### Step 3: Deploy Applications
 Deploy applications using K3s's native declarative Helm controller or standard manifests.
 
-#### A. Portainer CE (Management UI)
-Apply the Portainer manifests:
-```bash
-kubectl apply -f kubernetes/system/portainer/portainer.yaml
-```
-
-#### B. Pi-hole (DNS Resolver)
+#### A. Pi-hole (DNS Resolver)
 K3s has a built-in Helm Controller. Placing the `pihole-release.yaml` in the K3s auto-deploy directory will install/update Pi-hole automatically:
 ```bash
 # Symlink to K3s auto-deploy directory for GitOps reconciliation
@@ -74,7 +68,7 @@ To ensure application configuration persists when pods are rescheduled or rebuil
 ---
 
 ## 5. Automated Git Synchronization (Phase C)
-The repository contains a sync daemon (`scripts/git-sync.sh`) that polls for remote updates from GitHub and auto-commits local edits made on the host (e.g. via Cockpit or Portainer volume mounts).
+The repository contains a sync daemon (`scripts/git-sync.sh`) that polls for remote updates from GitHub and auto-commits local edits made on the host (e.g. via Cockpit or manual edits).
 
 ### Running as a Systemd Service (Recommended)
 To run the sync script as a persistent background daemon, create a systemd service file:

@@ -22,7 +22,7 @@ serviceDns:
   annotations: {}
 
 serviceWeb:
-  type: ClusterIP # Keep dashboard internal, proxy via Caddy or Portainer Ingress
+  type: ClusterIP # Keep dashboard internal, proxy via Traefik Ingress
   port: 80
 
 # Ingress configuration to expose the web dashboard via Traefik
