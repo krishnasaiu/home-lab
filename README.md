@@ -1,219 +1,102 @@
-# HomeLab - Rootless Podman DNS & Proxy Stack
+# Homelab - Declarative K3s GitOps Stack
 
 ## 1. Overview
-This project deploys a defined stack of **Pi-hole**, **Unbound**, and **Caddy** using Rootless Podman and Quadlet.
+This project manages a self-hosted Kubernetes homelab running on **Debian Stable**. It is structured for GitOps-driven deployment using **K3s (Lightweight Kubernetes)**, allowing replication on any clean machine.
 
-## 2. System Architecture
-
-### Network
-- **Network**: [dns.network](file:///home/krishna/.gemini/antigravity/scratch/dns.network) (Bridge)
-- **Subnet**: `10.89.0.0/24`
-
-### Static IP & Port Map
-| Service | Static IP | Internal Ports | Host Ports |
-| :--- | :--- | :--- | :--- |
-| **Pi-hole** | `10.89.0.10` | 80, 53 | 53 (UDP/TCP) |
-| **Unbound** | `10.89.0.20` | 53 | - |
-| **Caddy** | `10.89.0.30` | 80, 443 | 8080, 8443 |
-| **FTP** | `10.89.0.40` | 20, 21, 21100-21110 | 2020, 2121, 21100-21110 |
-| **Home Assistant** | `10.89.0.50` | 8123 | 8123 |
-| **Grocy** | `10.89.0.60` | 9283 | 9283 |
-| **Paperless** | `10.89.0.70` | 8000 | 8000 |
-| **Paperless-Redis** | `10.89.0.71` | 6379 | 6379 |
-| **Vaultwarden** | `10.89.0.80` | 80 | 8001 |
-| **Komodo** | `10.89.0.90` | 9120 | 9120 |
-| **Dispatcharr** | `10.89.0.100` | 9191 | 9191 |
----
-
-## 3. Replication Guide
-
-### Prerequisites
-1.  **Install Podman**:
-    ```bash
-    sudo dnf install podman container-tools -y
-    ```
-
-2.  **Configure Firewall** (Fedora/firewalld):
-    ```bash
-    # DNS Ports
-    sudo firewall-cmd --permanent --add-port=53/tcp
-    sudo firewall-cmd --permanent --add-port=53/udp
-    # Caddy Proxy Ports
-    sudo firewall-cmd --permanent --add-port=8080/tcp
-    sudo firewall-cmd --permanent --add-port=8443/tcp
-    # FTP Ports
-    sudo firewall-cmd --permanent --add-port=2121/tcp
-    sudo firewall-cmd --permanent --add-port=2020/tcp
-    sudo firewall-cmd --permanent --add-port=21100-21110/tcp
-    # Home Assistant
-    sudo firewall-cmd --permanent --add-port=8123/tcp
-    # Grocy
-    sudo firewall-cmd --permanent --add-port=9283/tcp
-    # New Services
-    sudo firewall-cmd --permanent --add-port=8001/tcp  # Vaultwarden
-    sudo firewall-cmd --permanent --add-port=9120/tcp  # Komodo
-    sudo firewall-cmd --permanent --add-port=9191/tcp  # Dispatcharr
-    sudo firewall-cmd --permanent --add-port=8000/tcp  # Paperless
-    # Reload
-    sudo firewall-cmd --reload
-    ```
-
-### Deployment Commands
-
-**Step 1: Create Secrets**
-Securely store passwords and tokens so they aren't exposed in config files:
-```bash
-# Pi-hole Web Admin Password
-printf "your_secure_password" | podman secret create my_secret -
-
-# DuckDNS Token (if used)
-printf "your_duckdns_token" | podman secret create duckdns_api_token -
-```
-
-**Step 2: Create Directory Structure**
-Run as non-root user:
-```bash
-mkdir -p ~/.config/containers/systemd/
-mkdir -p ~/.config/containers/storage/pihole/{etc-pihole,etc-dnsmasq.d,logs}
-mkdir -p ~/.config/containers/storage/unbound
-mkdir -p ~/.config/containers/storage/caddy/{caddy-config,caddy-data,Caddyfile_dir}
-```
-
-**Step 3: Configuration Strategy (Choose One)**
-
-**Option A: Git Repository Symlink (Recommended)**
-If you are cloning this project from Git, link the files instead of copying. This lets you edit files in your repo and just reload systemd to apply changes.
-```bash
-# Backup existing (just in case)
-mv ~/.config/containers/systemd ~/.config/containers/systemd.bak 2>/dev/null || true
-
-# Symlink systemd units (Quadlet files)
-# Assuming you are in the root of your git project
-ln -s $(pwd)/containers/systemd/*.container ~/.config/containers/systemd/
-ln -s $(pwd)/containers/systemd/*.network ~/.config/containers/systemd/
-
-# Symlink Config Files
-# Pi-hole
-rm -f ~/.config/containers/storage/pihole/pihole-resolv.conf
-ln -s $(pwd)/containers/storage/pihole/pihole-resolv.conf ~/.config/containers/storage/pihole/pihole-resolv.conf
-
-# Unbound
-rm -f ~/.config/containers/storage/unbound/unbound.conf
-ln -s $(pwd)/containers/storage/unbound/unbound.conf ~/.config/containers/storage/unbound/unbound.conf
-
-# Caddy
-rm -f ~/.config/containers/storage/caddy/Caddyfile
-ln -s $(pwd)/containers/storage/caddy/Caddyfile ~/.config/containers/storage/caddy/Caddyfile
-```
-
-**Option B: Direct Copy**
-Ensure the following files are copied to their respective locations:
-
-*   **Quadlet Units** -> `~/.config/containers/systemd/`
-    *   [dns.network](file:///home/krishna/.gemini/antigravity/scratch/dns.network)
-    *   [pihole.container](file:///home/krishna/.gemini/antigravity/scratch/pihole.container)
-    *   [unbound.container](file:///home/krishna/.gemini/antigravity/scratch/unbound.container)
-    *   [caddy.container](file:///home/krishna/.gemini/antigravity/scratch/caddy.container)
-*   **Configs** -> `~/.config/containers/storage/...`
-    *   `unbound/unbound.conf`
-    *   `caddy/Caddyfile`
-    *   `pihole/pihole-resolv.conf` (Content: `nameserver 10.89.0.20`)
-
-**Step 4: Deploy Stack**
-The setup script automates permissions, firewall, and service startup. It also supports modular installation.
-
-```bash
-# Option A: Install EVERYTHING (Default)
-./setup_dns_stack.sh
-
-# Option B: Install specific services
-./setup_dns_stack.sh vaultwarden komodo paperless
-```
-
-The script will:
-1.  Check prerequisites.
-2.  Install Quadlet files.
-3.  Set permissions and SELinux contexts.
-4.  Configure Firewall.
-5.  Start Systemd services.
+## 2. Directory Layout
+The repository is organized as follows:
+*   **`bootstrap/`**: Scripts to initialize the OS, install K3s, configure permissions, and setup base configurations.
+*   **`kubernetes/system/`**: System infrastructure services (e.g. Portainer CE, custom Ingress controllers).
+*   **`kubernetes/apps/`**: User-facing application workloads (e.g. Pi-hole DNS resolver).
+*   **`scripts/`**: Automation tools and active sync scripts.
 
 ---
 
-## 4. Advanced Debugging & Verification
+## 3. Replication & Setup Guide (Phase A & B)
 
-### 1. Verify Caddy (Reverse Proxy)
-Check if Caddy is listening and routing correctly.
+### Step 1: Debian Machine Bootstrapping
+Run the bootstrap script to install K3s (with default Traefik ingress disabled for custom reverse-proxy control) and configure `kubectl` permissions for user `krishna`:
 ```bash
-# Check if listening on host ports
-sudo ss -tulpn | grep caddy
+# Clone the repository
+git clone git@github.com:krishnasaiu/home-lab.git
+cd home-lab
 
-# Test Proxy Response (Should be HTTP 200 or 302 to login)
-curl -I http://localhost:8080/admin/
-
-# Check Caddy Logs for Access/Errors
-journalctl --user -u caddy -n 20
+# Run bootstrap script
+chmod +x bootstrap/install-k3s.sh
+./bootstrap/install-k3s.sh
 ```
 
-## Configuration Tips
-### Grocy: Change Currency to INR
-To update the currency without entering an interactive editor, use `sed` within the container's namespace:
+### Step 2: Establish Secure SSH Authentication with GitHub
+To configure the git-sync daemon, generate a secure SSH key on the Debian host and link it to your GitHub account:
 ```bash
-podman unshare sed -i "s/Setting('CURRENCY', 'USD');/Setting('CURRENCY', 'INR');/" ~/grocy_config/data/config.php
-systemctl --user restart grocy
+# Generate Ed25519 SSH Key
+ssh-keygen -t ed25519 -C "krishna@homelab" -f ~/.ssh/id_ed25519 -N ""
+
+# Start the ssh-agent and add key
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# Display the public key to copy to GitHub (Settings -> SSH and GPG Keys)
+cat ~/.ssh/id_ed25519.pub
 ```
 
-### 2. Connect to FTP
-Since standard `ftp` clients are often missing from modern OSs (like macOS), use one of the following:
+### Step 3: Deploy Applications
+Deploy applications using K3s's native declarative Helm controller or standard manifests.
 
-*   **GUI Clients (Recommended)**: FileZilla, Cyberduck, or WinSCP.
-    *   **Protocol**: FTP (File Transfer Protocol)
-    *   **Encryption**: Use "Only use plain FTP (insecure)" or "Require explicit FTP over TLS" if configured.
-    *   **Port**: `2121`
-*   **macOS Finder**:
-    *   `Go` -> `Connect to Server` (Cmd+K)
-    *   Address: `ftp://192.168.50.120:2121`
-    *   *Note: Finder is often Read-Only.*
-*   **Command Line (macOS)**:
-    *   Install generic ftp: `brew install inetutils`
-    *   Or use `lftp`: `brew install lftp`
-    *   Connect: `ftp -P 2121 192.168.50.120`
-
-### 3. Verify Proxy Enforcement (Security)
-Ensure Pi-hole cannot be accessed directly, forcing all traffic through Caddy.
+#### A. Portainer CE (Management UI)
+Apply the Portainer manifests:
 ```bash
-# Try to access Pi-hole's internal port directly from Host (Should FAIL)
-curl -I --connect-timeout 2 http://127.0.0.1:80/admin/
-# Output: curl: (7) Failed to connect... (Connection refused)
-
-# Try to access Pi-hole's old exposed port 8888 (We removed this, so it should FAIL)
-curl -I --connect-timeout 2 http://127.0.0.1:8888/admin/
-# Output: curl: (7) Failed to connect... (Connection refused)
+kubectl apply -f kubernetes/system/portainer/portainer.yaml
 ```
 
-### 3. Verify Unbound (Recursive DNS)
-Confirm that Pi-hole is actually using Unbound and Unbound is resolving.
+#### B. Pi-hole (DNS Resolver)
+K3s has a built-in Helm Controller. Placing the `pihole-release.yaml` in the K3s auto-deploy directory will install/update Pi-hole automatically:
 ```bash
-# 1. Test Unbound directly (simulating a query from inside the network)
-# We use the pihole container to run dig against the unbound container IP
-podman exec -it pihole dig google.com @10.89.0.20
-# Output: status: NOERROR
-
-# 2. Test Pi-hole Upstream
-# Run a specific query against Pi-hole and verify it answers
-podman exec -it pihole dig google.com @127.0.0.1
+# Symlink to K3s auto-deploy directory for GitOps reconciliation
+sudo ln -sf $(pwd)/kubernetes/apps/pihole/pihole-release.yaml /var/lib/rancher/k3s/server/manifests/pihole-release.yaml
 ```
 
-### 4. General Health
-```bash
-# Check all container IPs
-podman inspect -f '{{.Name}} - {{.NetworkSettings.Networks.dns.IPAddress}}' pihole unbound caddy
+---
 
-# Status of Services
-systemctl --user status pihole caddy unbound
+## 4. Persistent Storage on Debian
+To ensure application configuration persists when pods are rescheduled or rebuilt:
+*   We use K3s' default `local-path` storage provisioner.
+*   Storage is provisioned dynamically under `/var/lib/rancher/k3s/storage/` on the Debian host.
+*   All persistent data is mapped to persistent volume claims (PVCs) defined in the Helm configuration (`pihole-values.yaml`), safeguarding against any data loss.
+
+---
+
+## 5. Automated Git Synchronization (Phase C)
+The repository contains a sync daemon (`scripts/git-sync.sh`) that polls for remote updates from GitHub and auto-commits local edits made on the host (e.g. via Cockpit or Portainer volume mounts).
+
+### Running as a Systemd Service (Recommended)
+To run the sync script as a persistent background daemon, create a systemd service file:
+
+Create `/etc/systemd/system/homelab-git-sync.service`:
+```ini
+[Unit]
+Description=Homelab Git-Sync Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=krishna
+WorkingDirectory=/home/krishna/home-lab
+ExecStart=/home/krishna/home-lab/scripts/git-sync.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-## 5. Adding New Services
-To add a service (e.g., Home Assistant):
-1.  Create `homeassistant.container` with `IP=10.89.0.40` and `Network=dns.network`.
-2.  Update [caddy.container](file:///home/krishna/.gemini/antigravity/scratch/caddy.container) to publish port `8123`.
-3.  Add entry to [Caddyfile](file:///home/krishna/.gemini/antigravity/scratch/Caddyfile): `reverse_proxy 10.89.0.40:8123`.
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now homelab-git-sync.service
+```
+
+Check logs:
+```bash
+tail -f /var/log/homelab-git-sync.log
+```

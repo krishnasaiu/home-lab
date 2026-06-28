@@ -1,0 +1,52 @@
+# ==============================================================================
+# Pi-hole Helm Values Configuration
+# ==============================================================================
+
+# Admin Password Configuration
+# Note: In production, use existingSecret to avoid plain text passwords.
+admin:
+  enabled: true
+  password: "admin" # Set your admin dashboard password here
+
+# DNS Settings
+# Configure Pi-hole to use Unbound (if running in cluster) or upstream DNS
+DNS1: "1.1.1.1" # Primary upstream DNS (e.g. Cloudflare)
+DNS2: "8.8.8.8" # Secondary upstream DNS (e.g. Google)
+
+# Service Configuration
+# Expose DNS (UDP/TCP) and Web Dashboard
+serviceDns:
+  type: LoadBalancer # K3s ServiceLB will bind to the host's port 53
+  port: 53
+  annotations: {}
+
+serviceWeb:
+  type: ClusterIP # Keep dashboard internal, proxy via Caddy or Portainer Ingress
+  port: 80
+
+# Environment Variables
+extraEnvVars:
+  TZ: "Asia/Kolkata"
+  FTLCONF_dns_listeningMode: "all" # Required for Kubernetes to receive internal pod traffic
+
+# Persistent Storage Configurations
+# Uses the K3s default 'local-path' provisioner which persists data across pod restarts.
+persistentVolumeClaim:
+  enabled: true
+  storageClass: "local-path"
+  size: 5Gi
+
+dnsmasq:
+  persistentVolumeClaim:
+    enabled: true
+    storageClass: "local-path"
+    size: 2Gi
+
+# Resources constraints (adjust based on hardware capabilities)
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi

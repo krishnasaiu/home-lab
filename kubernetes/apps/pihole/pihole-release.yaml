@@ -1,0 +1,35 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: pihole
+  namespace: kube-system
+spec:
+  chart: pihole
+  repo: https://mojo2600.github.io/pihole-kubernetes/
+  targetNamespace: default
+  # We inline configuration options for the Helm chart under valuesContent.
+  # This acts as the link to our declarative values.
+  valuesContent: |
+    admin:
+      enabled: true
+      password: "admin"
+    DNS1: "1.1.1.1"
+    DNS2: "8.8.8.8"
+    serviceDns:
+      type: LoadBalancer
+      port: 53
+    serviceWeb:
+      type: ClusterIP
+      port: 80
+    extraEnvVars:
+      TZ: "Asia/Kolkata"
+      FTLCONF_dns_listeningMode: "all"
+    persistentVolumeClaim:
+      enabled: true
+      storageClass: "local-path"
+      size: 5Gi
+    dnsmasq:
+      persistentVolumeClaim:
+        enabled: true
+        storageClass: "local-path"
+        size: 2Gi
