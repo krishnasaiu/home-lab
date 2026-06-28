@@ -53,8 +53,15 @@ kubectl apply -f kubernetes/system/portainer/portainer.yaml
 K3s has a built-in Helm Controller. Placing the `pihole-release.yaml` in the K3s auto-deploy directory will install/update Pi-hole automatically:
 ```bash
 # Symlink to K3s auto-deploy directory for GitOps reconciliation
-sudo ln -sf $(pwd)/kubernetes/apps/pihole/pihole-release.yaml /var/lib/rancher/k3s/server/manifests/pihole-release.yaml
+sudo ln -sf /home/krishna/home-lab/kubernetes/apps/pihole/pihole-release.yaml /var/lib/rancher/k3s/server/manifests/pihole-release.yaml
 ```
+
+#### C. Retrieve Password
+To fetch the auto-generated password for Pi-hole (or other apps in the future), use the provided helper script:
+```bash
+./scripts/get-password.sh pihole
+```
+
 
 ---
 
