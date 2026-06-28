@@ -119,7 +119,30 @@ K9s is a terminal-based user interface to interact with your Kubernetes cluster.
     ```
 
 ### Usage
-Ensure your `KUBECONFIG` is set, then launch the UI:
+
+#### Setting up KUBECONFIG on your local Mac:
+To connect to the cluster from your local Mac machine:
+1. **Download the kubeconfig** from the Debian host using `scp`:
+   ```bash
+   mkdir -p ~/.kube
+   scp krishna@<DEBIAN_SERVER_IP>:~/.kube/config ~/.kube/config-homelab
+   ```
+2. **Edit the server IP address** inside `~/.kube/config-homelab`. K3s sets the API address to `127.0.0.1` (localhost) by default. Replace `127.0.0.1` with your Debian host IP:
+   ```yaml
+   server: https://<DEBIAN_SERVER_IP>:6443
+   ```
+3. **Export the configuration** in your Mac's terminal:
+   *   **Temporary** (current shell session):
+       ```bash
+       export KUBECONFIG=~/.kube/config-homelab
+       ```
+   *   **Permanent** (adds it to your zsh profile):
+       ```bash
+       echo 'export KUBECONFIG="$HOME/.kube/config-homelab"' >> ~/.zshrc
+       source ~/.zshrc
+       ```
+
+Now launch the UI:
 ```bash
 k9s
 ```
