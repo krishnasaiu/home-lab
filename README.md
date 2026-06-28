@@ -102,6 +102,11 @@ Check logs:
 tail -f /var/log/homelab-git-sync.log
 ```
 
+Alternatively, check full sync status (service status, git cleanliness, and remote diffs):
+```bash
+./scripts/check-sync-status.sh
+```
+
 ---
 
 ## 6. Cluster Management using K9s (TUI)
