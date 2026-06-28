@@ -26,10 +26,12 @@ spec:
           image: docker.io/delfer/alpine-ftp-server:latest
           imagePullPolicy: Always
           env:
-            # Format: "username|password|home_directory|UID|GID"
             # Matches UID/GID 1000 (krishna) so that files written by the scanner are owned by you.
             - name: USERS
-              value: "scanner|password123|/scans|1000|1000"
+              valueFrom:
+                secretKeyRef:
+                  name: ftp-credentials
+                  key: users
             - name: ADDRESS
               value: "192.168.50.120" # The Debian server's host IP (advertised for passive mode connections)
             - name: MIN_PORT

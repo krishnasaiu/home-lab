@@ -18,6 +18,30 @@ fi
 SERVICE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 SECRET_NAME=""
 
+# Custom handler for FTP server credentials (format: user|pass|dir|uid|gid)
+if [ "$SERVICE_NAME" = "ftp" ] || [ "$SERVICE_NAME" = "ftp-server" ]; then
+    SECRET_NAME="ftp-credentials"
+    KUBECONFIG_PATH="${KUBECONFIG:-$HOME/.kube/config}"
+    if [ ! -f "$KUBECONFIG_PATH" ]; then
+        echo -e "${RED}[ERROR] Kubeconfig not found at $KUBECONFIG_PATH.${NC}"
+        exit 1
+    fi
+    if ! kubectl --kubeconfig="$KUBECONFIG_PATH" get secret "$SECRET_NAME" -n default &>/dev/null; then
+        echo -e "${RED}[ERROR] Secret '$SECRET_NAME' not found in cluster.${NC}"
+        exit 1
+    fi
+    ENCODED_VAL=$(kubectl --kubeconfig="$KUBECONFIG_PATH" get secret "$SECRET_NAME" -n default -o jsonpath="{.data.users}" 2>/dev/null)
+    if [ -n "$ENCODED_VAL" ]; then
+        DECODED_VAL=$(echo "$ENCODED_VAL" | base64 --decode)
+        FTP_USER=$(echo "$DECODED_VAL" | cut -d'|' -f1)
+        FTP_PASS=$(echo "$DECODED_VAL" | cut -d'|' -f2)
+        echo -e "${GREEN}[SUCCESS] Credentials for FTP Server:${NC}"
+        echo "Username: $FTP_USER"
+        echo "Password: $FTP_PASS"
+        exit 0
+    fi
+fi
+
 # Define custom mappings if the secret name doesn't match <service>-admin
 case "$SERVICE_NAME" in
     pihole)
