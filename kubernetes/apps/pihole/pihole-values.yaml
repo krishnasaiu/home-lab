@@ -6,7 +6,8 @@
 # Note: In production, use existingSecret to avoid plain text passwords.
 admin:
   enabled: true
-  password: "admin" # Set your admin dashboard password here
+  existingSecret: "pihole-admin"
+  passwordKey: "password"
 
 # DNS Settings
 # Configure Pi-hole to use Unbound (if running in cluster) or upstream DNS

@@ -12,7 +12,8 @@ spec:
   valuesContent: |
     admin:
       enabled: true
-      password: "admin"
+      existingSecret: "pihole-admin"
+      passwordKey: "password"
     DNS1: "1.1.1.1"
     DNS2: "8.8.8.8"
     serviceDns:

@@ -33,4 +33,23 @@ if ! grep -q "export KUBECONFIG=" "$SHELL_PROFILE"; then
     echo 'export KUBECONFIG="$HOME/.kube/config"' >> "$SHELL_PROFILE"
 fi
 
+# 3. Auto-generate secure passwords and store in Kubernetes Secrets
+echo -e "${GREEN}[+] Setting up automated secrets...${NC}"
+export KUBECONFIG="$KUBE_DIR/config"
+
+if ! kubectl get secret pihole-admin -n default &>/dev/null; then
+    if command -v openssl &>/dev/null; then
+        PIHOLE_PASSWORD=$(openssl rand -base64 16)
+    else
+        PIHOLE_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)
+    fi
+    kubectl create secret generic pihole-admin \
+        --from-literal=password="$PIHOLE_PASSWORD" \
+        -n default
+    echo -e "    Generated and created ${GREEN}pihole-admin${NC} secret."
+else
+    echo "    Secret 'pihole-admin' already exists. Skipping generation."
+fi
+
 echo -e "${GREEN}[SUCCESS] K3s bootstrapped! Run 'kubectl get nodes' to verify.${NC}"
+
