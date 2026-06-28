@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ftp-server
+  namespace: default
+  labels:
+    app: ftp-server
+  annotations:
+    keel.sh/policy: "force" # Force updates when the image digest changes, even on same tag (latest)
+    keel.sh/trigger: "poll"
+    keel.sh/poll: "24h" # Poll once a day
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ftp-server
+  template:
+    metadata:
+      labels:
+        app: ftp-server
+    spec:
+      hostNetwork: true # Directly binds container ports to the host's ports (essential for easy FTP passive mode)
+      dnsPolicy: ClusterFirstWithHostNet # Ensures internal cluster DNS resolution still works inside the pod
+      containers:
+        - name: ftp-server
+          image: docker.io/delfer/alpine-ftp-server:latest
+          imagePullPolicy: Always
+          env:
+            # Format: "username|password|home_directory|UID|GID"
+            # Matches UID/GID 1000 (krishna) so that files written by the scanner are owned by you.
+            - name: USERS
+              value: "scanner|password123|/scans|1000|1000"
+            - name: ADDRESS
+              value: "192.168.50.120" # The Debian server's host IP (advertised for passive mode connections)
+            - name: MIN_PORT
+              value: "21000"
+            - name: MAX_PORT
+              value: "21010"
+          resources:
+            limits:
+              cpu: 250m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: scans-volume
+              mountPath: /scans
+      volumes:
+        - name: scans-volume
+          hostPath:
+            path: /home/krishna/scans
+            type: DirectoryOrCreate

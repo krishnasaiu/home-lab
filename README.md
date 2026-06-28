@@ -184,7 +184,33 @@ deploymentAnnotations:
 
 ---
 
-## 8. Troubleshooting & Homelab Gotchas
+## 8. FTP Server for Printer Scanners
+
+We run a lightweight FTP server (`delfer/alpine-ftp-server`) in the cluster with `hostNetwork: true` to support printer scans directly to the Debian host filesystem.
+
+### Deploying the FTP Server
+1. Apply the deployment manifest:
+   ```bash
+   kubectl apply -f kubernetes/apps/ftp-server/ftp-deployment.yaml
+   ```
+2. Create the target directory on the Debian host if it does not exist, and set permissions:
+   ```bash
+   mkdir -p /home/krishna/scans
+   chown -R krishna:krishna /home/krishna/scans
+   ```
+
+### Printer Configuration Settings
+Configure your printer/scanner with the following parameters:
+*   **Protocol**: FTP
+*   **Host Address**: `192.168.50.120` (Debian Server IP)
+*   **Port**: `21`
+*   **Username**: `scanner`
+*   **Password**: `password123` (Change this in `ftp-deployment.yaml` if needed)
+*   **Directory/Path**: `/` or `/scans` (Files will be written to `/home/krishna/scans/` on the server)
+
+---
+
+## 9. Troubleshooting & Homelab Gotchas
 
 Here are the manual steps and gotchas we encountered and solved during the setup:
 
