@@ -21,10 +21,15 @@ cd "$REPO_DIR"
 
 log "Starting Git-Sync daemon on branch '$BRANCH'..."
 
+# Test git configuration on startup and log warnings
+if ! git config user.name &>/dev/null || ! git config user.email &>/dev/null; then
+    log "[WARN] Git user.name or user.email is not configured on this host. Auto-commits might fail."
+fi
+
 while true; do
     # 1. Fetch latest changes from remote
-    if ! git fetch origin "$BRANCH" &>/dev/null; then
-        log "[ERROR] Failed to fetch from origin"
+    if ! git fetch origin "$BRANCH" 2>>"$LOG_FILE"; then
+        log "[ERROR] Failed to fetch from origin. Check network or SSH keys."
         sleep "$SYNC_INTERVAL"
         continue
     fi
@@ -32,23 +37,31 @@ while true; do
     # 2. Check for local modifications
     if [[ -n $(git status --porcelain) ]]; then
         log "[INFO] Local changes detected. Committing and pushing..."
-        git add .
-        git commit -m "Auto-commit: configurations updated on homelab host"
         
-        if git push origin "$BRANCH"; then
-            log "[SUCCESS] Local changes pushed successfully"
+        # We run git commands and redirect stdout/stderr to log file to capture errors
+        if git add . 2>>"$LOG_FILE"; then
+            # We use "|| true" to prevent set -e from killing the script if commit fails (e.g. no config)
+            if git commit -m "Auto-commit: configurations updated on homelab host" >>"$LOG_FILE" 2>&1; then
+                if git push origin "$BRANCH" >>"$LOG_FILE" 2>&1; then
+                    log "[SUCCESS] Local changes pushed successfully"
+                else
+                    log "[ERROR] Push failed. Reverting local commit..."
+                    git reset --soft HEAD~1 2>>"$LOG_FILE"
+                fi
+            else
+                log "[ERROR] Git commit failed. Check if user.name and user.email are set."
+            fi
         else
-            log "[ERROR] Push failed. Reverting commit and retrying later..."
-            git reset HEAD~1
+            log "[ERROR] Git add failed."
         fi
     else
         # 3. Check if remote has updates (fast-forward pull if clean)
-        LOCAL_HASH=$(git rev-parse HEAD)
-        REMOTE_HASH=$(git rev-parse "origin/$BRANCH")
+        LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
+        REMOTE_HASH=$(git rev-parse "origin/$BRANCH" 2>/dev/null || echo "")
 
-        if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+        if [[ -n "$LOCAL_HASH" && -n "$REMOTE_HASH" && "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
             log "[INFO] Remote changes detected. Pulling..."
-            if git pull --ff-only origin "$BRANCH"; then
+            if git pull --ff-only origin "$BRANCH" >>"$LOG_FILE" 2>&1; then
                 log "[SUCCESS] Pulled changes from GitHub successfully"
             else
                 log "[ERROR] Fast-forward pull failed. Resolve conflicts manually."
@@ -58,3 +71,4 @@ while true; do
 
     sleep "$SYNC_INTERVAL"
 done
+
