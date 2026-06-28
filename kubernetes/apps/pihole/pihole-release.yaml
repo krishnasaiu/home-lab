@@ -14,6 +14,10 @@ spec:
       enabled: true
       existingSecret: "pihole-admin"
       passwordKey: "password"
+    deploymentAnnotations:
+      keel.sh/policy: "force"
+      keel.sh/trigger: "poll"
+      keel.sh/poll: "24h"
     DNS1: "127.0.0.1#5335"
     DNS2: ""
     serviceDns:

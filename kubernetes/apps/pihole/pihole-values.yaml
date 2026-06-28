@@ -9,6 +9,12 @@ admin:
   existingSecret: "pihole-admin"
   passwordKey: "password"
 
+# Deployment annotations for automatic updates via Keel
+deploymentAnnotations:
+  keel.sh/policy: "force" # Force updates when the image digest changes, even on the same tag (latest/stable)
+  keel.sh/trigger: "poll"
+  keel.sh/poll: "24h" # Poll registry once a day
+
 # DNS Settings
 # Configure Pi-hole to use the Unbound sidecar container running on localhost port 5335
 DNS1: "127.0.0.1#5335"

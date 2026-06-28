@@ -1,0 +1,21 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: keel
+  namespace: kube-system
+spec:
+  chart: keel
+  repo: https://charts.keel.sh
+  targetNamespace: kube-system
+  valuesContent: |
+    stats:
+      enabled: false # Opt-out of anonymous usage collection
+    poll:
+      enabled: true
+      interval: "2h" # Check Docker Hub / registry every 2 hours
+    helmProvider:
+      enabled: false # We use standard deployments and K3s Helm controller, no Tiller/Helm v2
+    gcr:
+      enabled: false
+    aws:
+      enabled: false

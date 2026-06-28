@@ -162,7 +162,29 @@ k9s
 
 ---
 
-## 7. Troubleshooting & Homelab Gotchas
+## 7. Continuous Delivery & Auto-Updates using Keel
+
+We use **Keel** to automatically monitor container registries for new images (such as new versions of Pi-hole and Unbound) and roll out updates automatically with zero downtime.
+
+### Deploying Keel
+1. Keel is deployed declaratively using K3s's Helm controller. Create a symlink to auto-deploy Keel:
+   ```bash
+   sudo ln -sf /home/krishna/home-lab/kubernetes/system/keel/keel-release.yaml /var/lib/rancher/k3s/server/manifests/keel-release.yaml
+   ```
+2. K3s will automatically scan this directory and spin up the Keel operator in the `kube-system` namespace.
+
+### How it works:
+To enable auto-updates for any application (such as Pi-hole + Unbound), simply add Keel annotations to the resource's `metadata.annotations` or the Helm chart's `deploymentAnnotations`:
+```yaml
+deploymentAnnotations:
+  keel.sh/policy: "force" # Force upgrade when the registry tag digest changes
+  keel.sh/trigger: "poll"  # Monitor registry
+  keel.sh/poll: "24h"      # Check once a day
+```
+
+---
+
+## 8. Troubleshooting & Homelab Gotchas
 
 Here are the manual steps and gotchas we encountered and solved during the setup:
 
