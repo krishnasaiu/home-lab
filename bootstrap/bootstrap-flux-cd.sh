@@ -51,6 +51,10 @@ if ! kubectl get secret pihole-admin -n default &>/dev/null; then
     echo -e "${YELLOW}[+] Auto-generating secure alphanumeric password for Pi-hole...${NC}"
     PIHOLE_PASS=$(openssl rand -hex 12)
     kubectl create secret generic pihole-admin -n default --from-literal=password="$PIHOLE_PASS"
+    
+    # Restart the deployment to pick up the new secret immediately
+    echo -e "    Restarting Pi-hole deployment to load the new secret..."
+    kubectl rollout restart deployment/pihole -n default &>/dev/null || true
 fi
 
 # 5. Exit early if Flux is already bootstrapped
