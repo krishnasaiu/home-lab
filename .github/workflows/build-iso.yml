@@ -17,12 +17,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install ISO Building Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y simple-cdd xorriso rsync apt-utils debian-archive-keyring
-
-      - name: Configure Custom Profile
+      - name: Build ISO inside Debian Docker Container
         run: |
           # 1. Replace the repository URL placeholder with the active repo URL
           sed -i "s|%%REPO_URL%%|https://github.com/${{ github.repository }}.git|g" bootstrap/iso/homelab.postinst
@@ -34,14 +29,19 @@ jobs:
           cp bootstrap/iso/homelab.postinst my-cdd/profiles/
           chmod +x my-cdd/profiles/homelab.postinst
 
-      - name: Build Bootable ISO
-        run: |
-          cd my-cdd
-          # Run the simple-cdd compiler forcing target distribution to bookworm
-          build-simple-cdd --dist bookworm --profiles homelab
-          
-          # Verify ISO was created successfully
-          if [ ! -f images/debian-12-custom-amd64.iso ]; then
+          # 3. Spin up native Debian container to build the ISO
+          docker run --privileged --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            debian:bookworm-slim sh -c "
+              apt-get update &&
+              apt-get install -y simple-cdd xorriso rsync apt-utils debian-archive-keyring &&
+              cd my-cdd &&
+              build-simple-cdd --dist bookworm --profiles homelab
+            "
+
+          # 4. Verify ISO was created successfully
+          if [ ! -f my-cdd/images/debian-12-custom-amd64.iso ]; then
             echo "Error: ISO was not created!"
             exit 1
           fi
