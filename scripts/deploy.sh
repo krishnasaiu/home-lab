@@ -77,6 +77,22 @@ deploy_workload() {
         return 1
     fi
 
+    # Auto-detect if this is a HelmChart and delete existing resource to avoid revision lock
+    if grep -q "kind: HelmChart" "$src"; then
+        # Parse name and namespace using basic text parsing (safe and doesn't require yq)
+        local hc_name=$(grep -A 5 -m 1 "metadata:" "$src" | grep "name:" | awk '{print $2}' | tr -d '"'\''')
+        local hc_ns=$(grep -A 5 -m 1 "metadata:" "$src" | grep "namespace:" | awk '{print $2}' | tr -d '"'\''')
+        hc_ns=${hc_ns:-kube-system}
+        
+        if [ -n "$hc_name" ]; then
+            echo "   [HelmChart] Detected HelmChart: $hc_name in namespace $hc_ns"
+            if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
+                echo "   [HelmChart] Deleting existing HelmChart resource to clear locks/revisions..."
+                kubectl delete helmchart "$hc_name" -n "$hc_ns" --timeout=30s || true
+            fi
+        fi
+    fi
+
     echo "   Creating K3s manifest symlink: $dest -> $src"
     ln -sf "$src" "$dest"
 
@@ -84,7 +100,8 @@ deploy_workload() {
     echo "   Triggering K3s manifest scan..."
     touch -h "$dest"
     
-    echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}\n"
+    echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}"
+    echo -e "${YELLOW}   [TIP] If K3s doesn't pick up the change immediately, run: sudo systemctl restart k3s${NC}\n"
 }
 
 # Run deployment
