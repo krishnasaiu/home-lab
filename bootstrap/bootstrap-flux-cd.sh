@@ -13,6 +13,23 @@ NC='\033[0m'
 
 echo -e "${CYAN}=== Homelab Flux CD GitOps Bootstrapper ===${NC}\n"
 
+# 0. Setup Kubeconfig for current user if it does not exist
+if [ ! -f "$HOME/.kube/config" ]; then
+    echo -e "${YELLOW}[+] Copying Kubeconfig for user '$(whoami)'...${NC}"
+    mkdir -p "$HOME/.kube"
+    sudo cp /etc/rancher/k3s/k3s.yaml "$HOME/.kube/config"
+    sudo chown -R "$(whoami)":"$(whoami)" "$HOME/.kube"
+    chmod 600 "$HOME/.kube/config"
+    
+    # Export KUBECONFIG in shell profile if not present
+    SHELL_PROFILE="$HOME/.bashrc"
+    if [ -f "$SHELL_PROFILE" ]; then
+        if ! grep -q "export KUBECONFIG=" "$SHELL_PROFILE"; then
+            echo 'export KUBECONFIG="$HOME/.kube/config"' >> "$SHELL_PROFILE"
+        fi
+    fi
+fi
+
 # Check if Flux CD is already bootstrapped in the cluster
 FLUX_EXISTS=false
 if kubectl get deployment -n flux-system source-controller &>/dev/null; then
@@ -78,14 +95,22 @@ elif ! kubectl get secret postgres-credentials -n default -o jsonpath="{.data.db
       --from-literal=db_url_paperless="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/paperless"
 fi
 
-# 6. Ensure beszel-credentials secret exists (created manually for security)
+# 6. Pre-populate ftp-credentials secret if it does not exist
+if ! kubectl get secret ftp-credentials -n default &>/dev/null; then
+    echo -e "${YELLOW}[+] Auto-generating secure password for FTP Scanner...${NC}"
+    FTP_PASSWORD=$(openssl rand -hex 8)
+    kubectl create secret generic ftp-credentials -n default \
+      --from-literal=users="scanner|$FTP_PASSWORD|/scans|1000|1000"
+fi
+
+# 7. Ensure beszel-credentials secret exists (created manually for security)
 if ! kubectl get secret beszel-credentials -n default &>/dev/null; then
     echo -e "${RED}[ERROR] Secret 'beszel-credentials' not found. Please run the following command to create it securely:${NC}"
     echo -e "    kubectl create secret generic beszel-credentials -n default --from-literal=username=\"your_email\" --from-literal=password=\"your_password\""
     exit 1
 fi
 
-# 7. Exit early if Flux is already bootstrapped
+# 8. Exit early if Flux is already bootstrapped
 if [ "$FLUX_EXISTS" = true ]; then
     echo -e "${GREEN}[✔] Flux CD is already running in the cluster. Skipping Git repository link setup.${NC}"
     echo -e "${YELLOW}[+] Triggering reconciliation to apply latest changes...${NC}"
@@ -96,14 +121,14 @@ fi
 
 # -- Below this line, we perform the initial bootstrap setup requiring inputs --
 
-# 7. Ask for GitHub Username & Repository details
+# 9. Ask for GitHub Username & Repository details
 read -rp "Enter GitHub Owner/Username [krishnasaiu]: " GH_OWNER
 GH_OWNER=${GH_OWNER:-krishnasaiu}
 
 read -rp "Enter GitHub Repository Name [home-lab]: " GH_REPO
 GH_REPO=${GH_REPO:-home-lab}
 
-# 8. Ask for GitHub Personal Access Token (PAT) securely
+# 10. Ask for GitHub Personal Access Token (PAT) securely
 read -rsp "Enter GitHub Personal Access Token (PAT) with repo scope: " GITHUB_TOKEN
 echo ""
 if [ -z "$GITHUB_TOKEN" ]; then
@@ -114,7 +139,7 @@ fi
 # Export token for Flux CLI
 export GITHUB_TOKEN
 
-# 9. Run Flux Bootstrap
+# 11. Run Flux Bootstrap
 echo -e "${YELLOW}[+] Running Flux Bootstrap on GitHub repository ${GH_OWNER}/${GH_REPO}...${NC}"
 flux bootstrap github \
   --owner="$GH_OWNER" \

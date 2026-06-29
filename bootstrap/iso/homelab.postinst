@@ -3,27 +3,42 @@ set -e
 
 echo "=== Running Homelab Post-Installation Script ==="
 
-# 1. Download and Install Cockpit Navigator (45Drives File Manager)
-wget -O /tmp/navigator.deb https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.8/cockpit-navigator_0.5.8-1focal_all.deb
-dpkg -i /tmp/navigator.deb || apt-get install -f -y
-rm /tmp/navigator.deb
+# 1. Download and Install Cockpit Navigator in the target chroot environment
+wget -O /target/tmp/navigator.deb https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.8/cockpit-navigator_0.5.8-1focal_all.deb
+chroot /target dpkg -i /tmp/navigator.deb || chroot /target apt-get install -f -y
+rm -f /target/tmp/navigator.deb
 
-# 2. Pre-create required host directories
-mkdir -p /home/krishna/scans
-mkdir -p /home/krishna/homeassistant_config
-chown -R 1000:1000 /home/krishna/scans /home/krishna/homeassistant_config
-chmod -R 755 /home/krishna/scans /home/krishna/homeassistant_config
+# 2. Dynamically detect the non-root user created during installation
+USER_NAME=$(ls /target/home | head -n 1 | xargs)
+if [ -z "$USER_NAME" ]; then
+    echo "Error: No user folder detected in /target/home. Cannot proceed."
+    exit 1
+fi
+echo "Detected target administrator user: $USER_NAME"
 
-# 3. Clone this homelab repository
+# 3. Pre-create scans and Home Assistant configuration directories
+mkdir -p /target/home/$USER_NAME/scans
+mkdir -p /target/home/$USER_NAME/homeassistant_config
+
+# Write default configuration.yaml to automatically redirect Home Assistant to PostgreSQL on boot
+cat <<'EOF' > /target/home/$USER_NAME/homeassistant_config/configuration.yaml
+# Configure Home Assistant core configuration
+default_config:
+
+# Database integration to redirect history to PostgreSQL
+recorder:
+  db_url: !env_var DB_URL
+EOF
+
+# Set permissions for volume mounts
+chown -R 1000:1000 /target/home/$USER_NAME/scans /target/home/$USER_NAME/homeassistant_config
+chmod -R 755 /target/home/$USER_NAME/scans /target/home/$USER_NAME/homeassistant_config
+
+# 4. Clone this homelab repository in target
 echo "Cloning repository from %%REPO_URL%%..."
-git clone "%%REPO_URL%%" /home/krishna/home-lab
-chown -R 1000:1000 /home/krishna/home-lab
+git clone "%%REPO_URL%%" /target/home/$USER_NAME/home-lab
+chown -R 1000:1000 /target/home/$USER_NAME/home-lab
 
-# 4. Make scripts executable
-chmod +x /home/krishna/home-lab/bootstrap/install-k3s.sh
-chmod +x /home/krishna/home-lab/bootstrap/bootstrap-flux-cd.sh
-chmod +x /home/krishna/home-lab/scripts/*.sh
-
-# 5. Run the K3s installation script directly
-export DEBIAN_FRONTEND=noninteractive
-/home/krishna/home-lab/bootstrap/install-k3s.sh
+# 5. Install K3s directly inside the target system (skip starting service during installer phase)
+echo "Installing K3s directly inside the target chroot..."
+chroot /target sh -c "export INSTALL_K3S_SKIP_START=true; curl -sfL https://get.k3s.io | sh -"

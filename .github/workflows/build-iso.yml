@@ -3,7 +3,7 @@ name: Build Homelab Installer ISO
 on:
   push:
     paths:
-      - 'bootstrap/**'
+      - 'bootstrap/iso/**'
       - '.github/workflows/build-iso.yml'
   workflow_dispatch:
 
@@ -20,7 +20,7 @@ jobs:
       - name: Install ISO Building Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y simple-cdd xorriso rsync apt-utils
+          sudo apt-get install -y simple-cdd xorriso rsync apt-utils debian-archive-keyring
 
       - name: Configure Custom Profile
         run: |

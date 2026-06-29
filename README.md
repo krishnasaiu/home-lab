@@ -37,40 +37,71 @@ sudo chown -R <username>:<username> /home/<username>/scans /home/<username>/home
 
 Follow these sequential phases to replicate the entire stack from scratch:
 
-### Phase 1: Host Preparation (Cockpit & Hostname)
-Log in to your clean Debian server and configure the local hostname and administrative cockpit:
+### Option A: Fully Automated Setup (Recommended Custom ISO)
+1. **Fork this repository** to your own GitHub account.
+2. Go to your repository's **Releases** tab and download the custom bootable installer ISO (`debian-12-custom-amd64.iso`) under the `latest` release tag.
+3. Write this ISO to a USB flash drive (using Rufus, BalenaEtcher, or Ventoy).
+4. Boot your clean server from the USB. **The installer runs with zero keystrokes**: it automatically partitions the disk, installs Debian Stable, creates the administrator user, pre-installs Cockpit (including the visual navigator), clones your repository fork, pre-configures your volume directories, sets up Home Assistant database mappings, and pre-installs the K3s server.
+5. Once installation finishes, boot the server and proceed directly to **Phase 3: Bootstrap Flux CD**!
 
+---
+
+<details>
+<summary><b>🔍 Manual Host Setup Reference (Click to expand)</b></summary>
+
+If you choose not to use the automated ISO and want to configure the host system manually, follow these detailed preparation steps:
+
+#### 1. Pre-create Required Host Directories
+Create the scans and Home Assistant configuration folders:
 ```bash
-# 1. Update Hostname & Resolver mapping
+# Create directories
+mkdir -p /home/<username>/scans
+mkdir -p /home/<username>/homeassistant_config
+
+# Set ownership to prevent container permission conflicts
+sudo chown -R <username>:<username> /home/<username>/scans /home/<username>/homeassistant_config
+```
+
+#### 2. Host Preparation (Cockpit & Hostname)
+Configure your server hostname and install the admin cockpit:
+```bash
+# Update Hostname & Resolver mapping
 sudo hostnamectl set-hostname homelab
 sudo sed -i 's/127.0.1.1.*/127.0.1.1   homelab/g' /etc/hosts
 
-# 2. Install Cockpit & Core Utilities
+# Install Cockpit & Core Utilities
 sudo apt update
 sudo apt install -y cockpit cockpit-podman wget
 
-# 3. Install 45Drives Visual File Manager Plugin (Cockpit Navigator)
+# Install 45Drives Visual File Manager Plugin (Cockpit Navigator)
 wget https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.8/cockpit-navigator_0.5.8-1focal_all.deb
 sudo apt install -y ./cockpit-navigator_0.5.8-1focal_all.deb
 rm cockpit-navigator_0.5.8-1focal_all.deb
 
-# 4. Enable and start Cockpit Web Console (Port 9090)
+# Enable and start Cockpit Web Console (Port 9090)
 sudo systemctl enable --now cockpit.socket
 ```
 
-### Phase 2: Install Kubernetes (K3s Core)
-1. **Fork this repository** to your own GitHub account.
-2. Clone your **forked repository** onto the server and execute the K3s bootstrapper:
-
+#### 3. Install Kubernetes (K3s Core)
+Install K3s directly from the official upstream installer:
 ```bash
-# Clone your FORKED repository
-git clone https://github.com/<your_github_username>/home-lab.git
-cd home-lab
-
-# Make the installer executable and run
-chmod +x bootstrap/install-k3s.sh
-./bootstrap/install-k3s.sh
+curl -sfL https://get.k3s.io | sh -
 ```
+
+#### 4. Configure Home Assistant Database Link
+Create or edit `/home/<username>/homeassistant_config/configuration.yaml` and append:
+```yaml
+# Configure Home Assistant core configuration
+default_config:
+
+# Database integration to redirect history to PostgreSQL
+recorder:
+  db_url: !env_var DB_URL
+```
+
+</details>
+
+---
 
 ### Phase 3: Bootstrap Flux CD (GitOps)
 1. Generate a **GitHub Classic Personal Access Token (PAT)** on GitHub with `repo` scope.
@@ -84,24 +115,7 @@ export GITHUB_TOKEN="your_personal_access_token_here"
 > [!NOTE]
 > The bootstrapper generates PostgreSQL passwords, matches namespace secrets, rollouts dependencies, and links Flux. It takes roughly 2 minutes to complete syncing the apps.
 
-### Phase 4: Database Initializations
-Once the core database pod is running:
-1. **Initialize the Paperless Database**: The Postgres PVC was just initialized, meaning we must create the logical schema for Paperless-ngx manually:
-   ```bash
-   kubectl exec -it deployment/postgres -n default -c postgres -- psql -U postgres -c "CREATE DATABASE paperless;"
-   ```
-2. **Migrate Home Assistant to PostgreSQL**: 
-   Append the following to the bottom of `/home/<username>/homeassistant_config/configuration.yaml`:
-   ```yaml
-   recorder:
-     db_url: !env_var DB_URL
-   ```
-   Restart Home Assistant to apply:
-   ```bash
-   kubectl rollout restart deployment/homeassistant
-   ```
-
-### Phase 5: First-Time Application Setup
+### Phase 4: First-Time Application Setup
 
 1.  **Configure Beszel credentials**: Beszel Hub is deployed, but requires you to register your admin account and save credentials.
     *   Create a secure secret in the cluster from your terminal to avoid committing plain text password to Git:
