@@ -37,8 +37,8 @@ jobs:
       - name: Build Bootable ISO
         run: |
           cd my-cdd
-          # Run the simple-cdd compiler using the homelab profile settings
-          build-simple-cdd --profiles homelab
+          # Run the simple-cdd compiler forcing target distribution to bookworm
+          build-simple-cdd --dist bookworm --profiles homelab
           
           # Verify ISO was created successfully
           if [ ! -f images/debian-12-custom-amd64.iso ]; then
