@@ -42,7 +42,7 @@ jobs:
             "
 
           # 4. Verify ISO was created successfully
-          if [ ! -f my-cdd/images/debian-12-custom-amd64.iso ]; then
+          if [ ! -f my-cdd/images/debian-12-amd64-CD-1.iso ]; then
             echo "Error: ISO was not created!"
             exit 1
           fi
@@ -62,7 +62,7 @@ jobs:
 
           # 2. Create the fresh release and attach the new bootable ISO
           echo "Creating new latest release with the compiled ISO..."
-          gh release create latest ./my-cdd/images/debian-12-custom-amd64.iso \
+          gh release create latest ./my-cdd/images/debian-12-amd64-CD-1.iso \
             --title "Latest Homelab Installer ISO" \
             --notes "Automated bootable custom Debian ISO containing K3s, Cockpit console, pre-created volume paths, and default configurations. Simply write to a USB and boot your clean server to deploy." \
             --target main
