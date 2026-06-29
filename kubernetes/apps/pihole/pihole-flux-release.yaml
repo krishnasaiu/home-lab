@@ -62,6 +62,7 @@ spec:
       customDnsEntries:
         - address=/pihole.homelab/${host_ip}
         - address=/homeassistant.homelab/${host_ip}
+        - address=/vaultwarden.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"
