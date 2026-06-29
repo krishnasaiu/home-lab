@@ -28,6 +28,11 @@ spec:
           env:
             - name: TZ
               value: "Asia/Kolkata"
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: db_url_homeassistant
           resources:
             limits:
               cpu: 1000m

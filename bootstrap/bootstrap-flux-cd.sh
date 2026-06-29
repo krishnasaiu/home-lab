@@ -57,7 +57,17 @@ if ! kubectl get secret pihole-admin -n default &>/dev/null; then
     kubectl rollout restart deployment/pihole -n default &>/dev/null || true
 fi
 
-# 5. Exit early if Flux is already bootstrapped
+# 5. Pre-populate postgres-credentials secret with a clean alphanumeric password if it does not exist
+if ! kubectl get secret postgres-credentials -n default &>/dev/null; then
+    echo -e "${YELLOW}[+] Auto-generating secure password for PostgreSQL...${NC}"
+    POSTGRES_PASS=$(openssl rand -hex 16)
+    kubectl create secret generic postgres-credentials -n default \
+      --from-literal=password="$POSTGRES_PASS" \
+      --from-literal=db_url_homeassistant="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/homeassistant" \
+      --from-literal=db_url_vaultwarden="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/vaultwarden"
+fi
+
+# 6. Exit early if Flux is already bootstrapped
 if [ "$FLUX_EXISTS" = true ]; then
     echo -e "${GREEN}[✔] Flux CD is already running in the cluster. Skipping Git repository link setup.${NC}"
     echo -e "${YELLOW}[+] Triggering reconciliation to apply latest changes...${NC}"
@@ -68,14 +78,14 @@ fi
 
 # -- Below this line, we perform the initial bootstrap setup requiring inputs --
 
-# 6. Ask for GitHub Username & Repository details
+# 7. Ask for GitHub Username & Repository details
 read -rp "Enter GitHub Owner/Username [krishnasaiu]: " GH_OWNER
 GH_OWNER=${GH_OWNER:-krishnasaiu}
 
 read -rp "Enter GitHub Repository Name [home-lab]: " GH_REPO
 GH_REPO=${GH_REPO:-home-lab}
 
-# 7. Ask for GitHub Personal Access Token (PAT) securely
+# 8. Ask for GitHub Personal Access Token (PAT) securely
 read -rsp "Enter GitHub Personal Access Token (PAT) with repo scope: " GITHUB_TOKEN
 echo ""
 if [ -z "$GITHUB_TOKEN" ]; then
@@ -86,7 +96,7 @@ fi
 # Export token for Flux CLI
 export GITHUB_TOKEN
 
-# 8. Run Flux Bootstrap
+# 9. Run Flux Bootstrap
 echo -e "${YELLOW}[+] Running Flux Bootstrap on GitHub repository ${GH_OWNER}/${GH_REPO}...${NC}"
 flux bootstrap github \
   --owner="$GH_OWNER" \
