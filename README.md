@@ -102,11 +102,30 @@ Once the core database pod is running:
    ```
 
 ### Phase 5: First-Time Application Setup
-1. **Create Paperless Admin Account**: Run the Django administrator wizard:
+
+1.  **Configure Beszel credentials**: Beszel Hub is deployed, but requires you to register your admin account and save credentials.
+    *   Create a secure secret in the cluster from your terminal to avoid committing plain text password to Git:
+        ```bash
+        kubectl create secret generic beszel-credentials -n default \
+          --from-literal=username="your-admin-email@example.com" \
+          --from-literal=password="your-beszel-admin-password"
+        ```
+    *   Open `http://<server_ip>:8090/`, log in, click **Add System**, set the name to `homelab`, and retrieve the **Agent Public Key** (`ssh-ed25519 ...`). 
+    *   Update the `KEY` variable inside `kubernetes/apps/beszel/beszel-agent-deployment.yaml` with this public key to start system resource tracking.
+
+2.  **Configure Uptime Kuma monitoring**: 
+    *   Open `http://<server_ip>:3001/` and register your admin account.
+    *   Add monitors for your local services. Since PostgreSQL and Redis do not run on the host network directly, monitor them using internal cluster DNS:
+        *   **Postgres Host**: `postgres-service.default.svc.cluster.local` (Port `5432`)
+        *   **Redis Host**: `redis-service.default.svc.cluster.local` (Port `6379`)
+    *   Click **Status Pages** -> **Add New Status Page**, set the slug to `default`, check the boxes for all your monitors, and save. This enables the live summary status widget on your Homepage dashboard card.
+
+3.  **Create Paperless Admin Account**: Run the Django administrator wizard:
    ```bash
    kubectl exec -it deployment/paperless -n default -c paperless -- createsuperuser
    ```
-2. **Fetch Auto-Generated Passwords**: Print database, dashboard, or FTP credentials using the utility script:
+
+4.  **Fetch Auto-Generated Passwords**: Print database, dashboard, or FTP credentials using the utility script:
    ```bash
    # Fetch Pi-hole admin interface password
    ./scripts/get-password.sh pihole
@@ -131,8 +150,10 @@ Once synchronized, all apps are exposed via **Traefik Ingress** (Port 80) and bo
 | **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.homelab/` | Smart Home Hub |
 | **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.homelab/` | Password Manager (Bitwarden) |
 | **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.homelab/` | Document Archiver & OCR |
+| **Uptime Kuma** | `http://<server_ip>:3001/` | `http://status.homelab/` | Service Availability Monitors |
 | **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.homelab/` | Web PostgreSQL Console |
 | **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.homelab/` | Web Redis Console |
+| **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.homelab/` | Lightweight Server Resource Monitor |
 | **Cockpit Console**| `https://<server_ip>:9090/` | N/A | Linux OS Dashboard |
 
 ---
