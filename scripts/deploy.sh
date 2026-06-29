@@ -86,9 +86,15 @@ deploy_workload() {
         
         if [ -n "$hc_name" ]; then
             echo "   [HelmChart] Detected HelmChart: $hc_name in namespace $hc_ns"
+            # Delete the existing HelmChart CRD and wait for it to be completely gone
             if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
                 echo "   [HelmChart] Deleting existing HelmChart resource to clear locks/revisions..."
-                kubectl delete helmchart "$hc_name" -n "$hc_ns" --timeout=30s || true
+                kubectl delete helmchart "$hc_name" -n "$hc_ns" --wait=true --timeout=30s || true
+            fi
+            # Delete the associated helm-install job as well to prevent watcher race conditions
+            if kubectl get job "helm-install-$hc_name" -n "$hc_ns" &>/dev/null; then
+                echo "   [HelmChart] Deleting old installer job..."
+                kubectl delete job "helm-install-$hc_name" -n "$hc_ns" --wait=true --timeout=30s || true
             fi
         fi
     fi
