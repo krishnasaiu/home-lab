@@ -114,53 +114,47 @@ deploy_workload() {
     
     # Watch if the changes are picked up by K3s Helm controller
     if [ -n "${hc_name:-}" ]; then
-        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job..."
+        # Parse target namespace for the deployment
+        local target_ns=$(grep "targetNamespace:" "$src" | awk '{print $2}' | tr -d '"'\''')
+        target_ns=${target_ns:-default}
+
+        echo -n "   [HelmChart] Watching for deployment rollout in namespace '$target_ns'..."
         local start_time=$(date +%s)
         local timeout=25
         local success=false
         
         while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
-            # Check if K3s has recreated the HelmChart resource and completed the install job
-            if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
-                local job_status=$(kubectl get job "helm-install-$hc_name" -n "$hc_ns" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
-                if [ "$job_status" = "True" ]; then
-                    echo -e "\r\033[K${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates!${NC}"
-                    success=true
-                    break
-                fi
-                echo -ne "\r\033[K   [HelmChart] Status: Recreated. Running installation job..."
-            else
-                echo -ne "\r\033[K   [HelmChart] Status: Waiting for K3s scan to pick up manifest..."
+            # Check if deployment rollout is complete
+            if kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=3s &>/dev/null; then
+                echo -e "\r\033[K${GREEN}   [SUCCESS] Deployment is fully rolled out and ready!${NC}"
+                success=true
+                break
             fi
-            sleep 5
+            echo -ne "\r\033[K   [HelmChart] Status: Reconciling. Waiting for pods to become ready..."
+            sleep 3
         done
         
         # If it timed out, automatically restart K3s to force-trigger the reconciliation
         if [ "$success" = false ]; then
             echo -e "\r\033[K${YELLOW}   [WARNING] K3s did not pick up the update within 25 seconds. Restarting K3s service...${NC}"
             systemctl restart k3s
-            echo -n "   [HelmChart] K3s restarted. Waiting for installation job to complete (max 90s)..."
+            echo -n "   [HelmChart] K3s restarted. Waiting for deployment to become ready (max 90s)..."
             
             local post_restart_start=$(date +%s)
             local post_restart_timeout=90
             while [ $(($(date +%s) - post_restart_start)) -lt $post_restart_timeout ]; do
-                if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
-                    local job_status=$(kubectl get job "helm-install-$hc_name" -n "$hc_ns" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
-                    if [ "$job_status" = "True" ]; then
-                        echo -e "\r\033[K${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates after restart!${NC}"
-                        success=true
-                        break
-                    fi
-                    echo -ne "\r\033[K   [HelmChart] Status: Recreated. Running installation job..."
-                else
-                    echo -ne "\r\033[K   [HelmChart] Status: Waiting for K3s to initialize and scan manifests..."
+                if kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=3s &>/dev/null; then
+                    echo -e "\r\033[K${GREEN}   [SUCCESS] Deployment is fully rolled out and ready after restart!${NC}"
+                    success=true
+                    break
                 fi
-                sleep 5
+                echo -ne "\r\033[K   [HelmChart] Status: Initializing. Waiting for pods to become ready..."
+                sleep 3
             done
         fi
         
         if [ "$success" = false ]; then
-            echo -e "\r\033[K${RED}   [ERROR] K3s failed to apply the HelmChart after restart.${NC}"
+            echo -e "\r\033[K${RED}   [ERROR] Deployment failed to roll out within timeout.${NC}"
             return 1
         fi
     fi
