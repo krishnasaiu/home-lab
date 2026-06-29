@@ -38,11 +38,9 @@ data:
         - PostgreSQL:
             icon: postgresql
             description: Relational Database
-            ping: postgres-service.default.svc.cluster.local:5432
         - Redis Cache:
             icon: redis
             description: Centralized Cache / MQ
-            ping: redis-service.default.svc.cluster.local:6379
         - Cockpit:
             icon: cockpit
             href: http://192.168.50.120:9090/
