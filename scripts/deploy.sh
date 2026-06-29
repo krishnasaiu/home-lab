@@ -105,8 +105,10 @@ deploy_workload() {
     local host_ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $(NF-2); exit}' || hostname -I | awk '{print $1}')
     host_ip=$(echo "$host_ip" | xargs) # trim whitespace
     host_ip=${host_ip:-127.0.0.1}
-    # Write to destination replacing __HOST_IP__ template values
+    # Write to destination replacing __HOST_IP__ template values and appending unique sync hash
     sed "s/__HOST_IP__/$host_ip/g" "$src" > "$dest"
+    echo "" >> "$dest"
+    echo "# deploy-timestamp: $(date +%s)" >> "$dest"
 
     # 3. Touch the symlink to force K3s update
     echo "   Triggering K3s manifest scan..."
@@ -120,7 +122,7 @@ deploy_workload() {
 
         echo -n "   [HelmChart] Watching for deployment rollout in namespace '$target_ns'..."
         local start_time=$(date +%s)
-        local timeout=25
+        local timeout=120
         local success=false
         
         while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
@@ -134,27 +136,9 @@ deploy_workload() {
             sleep 3
         done
         
-        # If it timed out, automatically restart K3s to force-trigger the reconciliation
         if [ "$success" = false ]; then
-            echo -e "\r\033[K${YELLOW}   [WARNING] K3s did not pick up the update within 25 seconds. Restarting K3s service...${NC}"
-            systemctl restart k3s
-            echo -n "   [HelmChart] K3s restarted. Waiting for deployment to become ready (max 90s)..."
-            
-            local post_restart_start=$(date +%s)
-            local post_restart_timeout=90
-            while [ $(($(date +%s) - post_restart_start)) -lt $post_restart_timeout ]; do
-                if kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=3s &>/dev/null; then
-                    echo -e "\r\033[K${GREEN}   [SUCCESS] Deployment is fully rolled out and ready after restart!${NC}"
-                    success=true
-                    break
-                fi
-                echo -ne "\r\033[K   [HelmChart] Status: Initializing. Waiting for pods to become ready..."
-                sleep 3
-            done
-        fi
-        
-        if [ "$success" = false ]; then
-            echo -e "\r\033[K${RED}   [ERROR] Deployment failed to roll out within timeout.${NC}"
+            echo -e "\r\033[K${RED}   [ERROR] Deployment failed to roll out within 2 minutes.${NC}"
+            echo -e "${YELLOW}   [TIP] If K3s is slow, run: kubectl get pods -n $target_ns -l app=$hc_name to inspect.${NC}"
             return 1
         fi
     fi
