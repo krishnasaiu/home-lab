@@ -6,6 +6,7 @@ set -euo pipefail
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 if [ $# -lt 1 ]; then
@@ -78,6 +79,23 @@ for key in password admin-password token; do
     ENCODED_VAL=$(kubectl --kubeconfig="$KUBECONFIG_PATH" get secret "$SECRET_NAME" -n default -o jsonpath="{.data.$key}" 2>/dev/null)
     if [ -n "$ENCODED_VAL" ]; then
         DECODED_VAL=$(echo "$ENCODED_VAL" | base64 --decode)
+        
+        # Check if there is any trailing newline or carriage return
+        CLEAN_VAL=$(echo -n "$DECODED_VAL" | tr -d '\r\n')
+        if [ "$DECODED_VAL" != "$CLEAN_VAL" ]; then
+            echo -e "${YELLOW}[WARNING] Trailing newline/whitespace detected in secret '$SECRET_NAME'! Self-healing...${NC}"
+            # Recreate the secret cleanly
+            kubectl --kubeconfig="$KUBECONFIG_PATH" delete secret "$SECRET_NAME" -n default &>/dev/null || true
+            kubectl --kubeconfig="$KUBECONFIG_PATH" create secret generic "$SECRET_NAME" -n default --from-literal="$key"="$CLEAN_VAL" &>/dev/null
+            
+            # Restart deployment to pick up the clean secret immediately
+            if [ "$SERVICE_NAME" = "pihole" ]; then
+                echo -e "    Restarting Pi-hole deployment to load the clean secret..."
+                kubectl --kubeconfig="$KUBECONFIG_PATH" rollout restart deployment/pihole -n default &>/dev/null || true
+            fi
+            DECODED_VAL="$CLEAN_VAL"
+        fi
+        
         echo -e "${GREEN}[SUCCESS] Password for $SERVICE_NAME ($SECRET_NAME -> $key):${NC}"
         echo "$DECODED_VAL"
         exit 0
