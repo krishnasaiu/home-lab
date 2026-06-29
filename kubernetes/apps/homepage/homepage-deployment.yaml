@@ -1,4 +1,35 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage-role
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: homepage-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: homepage-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: homepage-config
@@ -21,8 +52,12 @@ data:
           dateStyle: long
           timeStyle: medium
         timezone: Asia/Kolkata
-    - resources:
-        uptime: true
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          nodes: true
 
   services.yaml: |
     - Infrastructure:
@@ -60,6 +95,11 @@ data:
               systemId: homelab
               version: 2
               fields: ["cpu", "memory", "disk", "network"]
+        - Uptime Kuma:
+            icon: uptime-kuma
+            href: http://192.168.50.120:3001/
+            description: Service Availability
+            ping: http://192.168.50.120:3001/
     - Applications:
         - Home Assistant:
             icon: home-assistant
@@ -107,6 +147,7 @@ spec:
       labels:
         app: homepage
     spec:
+      serviceAccountName: homepage-sa
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
