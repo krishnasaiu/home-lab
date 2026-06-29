@@ -1,15 +1,33 @@
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: mojo2600
+  namespace: flux-system
+spec:
+  interval: 2h
+  url: https://mojo2600.github.io/pihole-kubernetes/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
 metadata:
   name: pihole
-  namespace: kube-system
+  namespace: default
 spec:
-  chart: pihole
-  repo: https://mojo2600.github.io/pihole-kubernetes/
-  targetNamespace: default
-  # We inline configuration options for the Helm chart under valuesContent.
-  # This acts as the link to our declarative values.
-  valuesContent: |
+  interval: 5m
+  chart:
+    spec:
+      chart: pihole
+      sourceRef:
+        kind: HelmRepository
+        name: mojo2600
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
     admin:
       enabled: true
       existingSecret: "pihole-admin"
@@ -28,9 +46,8 @@ spec:
         kubernetes.io/ingress.class: traefik
       hosts:
         - pihole.homelab
-        - __HOST_IP__
+        - ${host_ip}
       path: /
-
     extraEnvVars:
       TZ: "Asia/Kolkata"
       DNSMASQ_LISTENING: "all"
@@ -52,8 +69,8 @@ spec:
       size: 5Gi
     dnsmasq:
       customDnsEntries:
-        - address=/pihole.homelab/__HOST_IP__
-        - address=/homeassistant.homelab/__HOST_IP__
+        - address=/pihole.homelab/${host_ip}
+        - address=/homeassistant.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"
