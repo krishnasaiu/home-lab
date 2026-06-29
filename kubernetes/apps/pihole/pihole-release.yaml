@@ -59,10 +59,10 @@ spec:
         image: docker.io/mvance/unbound:latest
         ports:
           - containerPort: 5335
-            name: dns-udp
+            name: unbound-udp
             protocol: UDP
           - containerPort: 5335
-            name: dns-tcp
+            name: unbound-tcp
             protocol: TCP
         volumeMounts:
           - name: unbound-config-volume
