@@ -13,31 +13,19 @@ NC='\033[0m'
 
 echo -e "${CYAN}=== Homelab Flux CD GitOps Bootstrapper ===${NC}\n"
 
-# 1. Ask for GitHub Username & Repository details
-read -rp "Enter GitHub Owner/Username [krishnasaiu]: " GH_OWNER
-GH_OWNER=${GH_OWNER:-krishnasaiu}
-
-read -rp "Enter GitHub Repository Name [home-lab]: " GH_REPO
-GH_REPO=${GH_REPO:-home-lab}
-
-# 2. Ask for GitHub Personal Access Token (PAT) securely
-read -rsp "Enter GitHub Personal Access Token (PAT) with repo scope: " GITHUB_TOKEN
-echo ""
-if [ -z "$GITHUB_TOKEN" ]; then
-    echo -e "${RED}[ERROR] GitHub Personal Access Token cannot be empty.${NC}"
-    exit 1
+# Check if Flux CD is already bootstrapped in the cluster
+FLUX_EXISTS=false
+if kubectl get deployment -n flux-system source-controller &>/dev/null; then
+    FLUX_EXISTS=true
 fi
 
-# Export token for Flux CLI
-export GITHUB_TOKEN
-
-# 3. Stop old git-sync systemd service if running
+# 1. Stop old git-sync systemd service if running
 if systemctl is-active --quiet homelab-git-sync.service &>/dev/null; then
     echo -e "${YELLOW}[+] Stopping and disabling old homelab-git-sync service...${NC}"
     sudo systemctl disable --now homelab-git-sync.service || true
 fi
 
-# 4. Install Flux CLI if not present
+# 2. Install Flux CLI if not present
 if ! command -v flux &>/dev/null; then
     echo -e "${YELLOW}[+] Installing Flux CLI...${NC}"
     curl -s https://fluxcd.io/install.sh | sudo bash
@@ -45,7 +33,7 @@ else
     echo -e "${GREEN}[✔] Flux CLI is already installed.${NC}"
 fi
 
-# 5. Create namespace and pre-populate cluster-settings ConfigMap with host LAN IP
+# 3. Create namespace and pre-populate cluster-settings ConfigMap with host LAN IP
 echo -e "${YELLOW}[+] Generating cluster-settings ConfigMap...${NC}"
 HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $(NF-2); exit}' || hostname -I | awk '{print $1}')
 HOST_IP=$(echo "$HOST_IP" | xargs)
@@ -58,14 +46,43 @@ kubectl create configmap cluster-settings -n flux-system \
   --from-literal=host_ip="$HOST_IP" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# Pre-populate pihole-admin secret with a clean alphanumeric password if it does not exist
+# 4. Pre-populate pihole-admin secret with a clean alphanumeric password if it does not exist
 if ! kubectl get secret pihole-admin -n default &>/dev/null; then
     echo -e "${YELLOW}[+] Auto-generating secure alphanumeric password for Pi-hole...${NC}"
     PIHOLE_PASS=$(openssl rand -hex 12)
     kubectl create secret generic pihole-admin -n default --from-literal=password="$PIHOLE_PASS"
 fi
 
-# 6. Run Flux Bootstrap
+# 5. Exit early if Flux is already bootstrapped
+if [ "$FLUX_EXISTS" = true ]; then
+    echo -e "${GREEN}[✔] Flux CD is already running in the cluster. Skipping Git repository link setup.${NC}"
+    echo -e "${YELLOW}[+] Triggering reconciliation to apply latest changes...${NC}"
+    flux reconcile source git flux-system || true
+    echo -e "${GREEN}[SUCCESS] Cluster updated successfully!${NC}"
+    exit 0
+fi
+
+# -- Below this line, we perform the initial bootstrap setup requiring inputs --
+
+# 6. Ask for GitHub Username & Repository details
+read -rp "Enter GitHub Owner/Username [krishnasaiu]: " GH_OWNER
+GH_OWNER=${GH_OWNER:-krishnasaiu}
+
+read -rp "Enter GitHub Repository Name [home-lab]: " GH_REPO
+GH_REPO=${GH_REPO:-home-lab}
+
+# 7. Ask for GitHub Personal Access Token (PAT) securely
+read -rsp "Enter GitHub Personal Access Token (PAT) with repo scope: " GITHUB_TOKEN
+echo ""
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo -e "${RED}[ERROR] GitHub Personal Access Token cannot be empty.${NC}"
+    exit 1
+fi
+
+# Export token for Flux CLI
+export GITHUB_TOKEN
+
+# 8. Run Flux Bootstrap
 echo -e "${YELLOW}[+] Running Flux Bootstrap on GitHub repository ${GH_OWNER}/${GH_REPO}...${NC}"
 flux bootstrap github \
   --owner="$GH_OWNER" \
