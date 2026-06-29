@@ -108,7 +108,7 @@ deploy_workload() {
     
     # Watch if the changes are picked up by K3s Helm controller
     if [ -n "${hc_name:-}" ]; then
-        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job (max 2m): "
+        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job (max 2m)..."
         local start_time=$(date +%s)
         local timeout=120
         local success=false
@@ -118,13 +118,13 @@ deploy_workload() {
             if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
                 local job_status=$(kubectl get job "helm-install-$hc_name" -n "$hc_ns" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
                 if [ "$job_status" = "True" ]; then
-                    echo -e "\n${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates!${NC}"
+                    echo -e "\r\033[K${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates!${NC}"
                     success=true
                     break
                 fi
-                echo -n "."
+                echo -ne "\r\033[K   [HelmChart] Status: Recreated. Running installation job..."
             else
-                echo -n "?"
+                echo -ne "\r\033[K   [HelmChart] Status: Waiting for K3s scan to pick up manifest..."
             fi
             sleep 5
         done
