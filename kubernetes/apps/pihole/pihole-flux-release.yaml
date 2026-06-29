@@ -41,13 +41,7 @@ spec:
       type: ClusterIP
       port: 80
     ingress:
-      enabled: true
-      annotations:
-        kubernetes.io/ingress.class: traefik
-      hosts:
-        - pihole.homelab
-        - ${host_ip}
-      path: /
+      enabled: false
     extraEnvVars:
       TZ: "Asia/Kolkata"
       DNSMASQ_LISTENING: "all"
