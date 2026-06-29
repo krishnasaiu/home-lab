@@ -59,10 +59,11 @@ sudo systemctl enable --now cockpit.socket
 ```
 
 ### Phase 2: Install Kubernetes (K3s Core)
-Clone your repository onto the server and execute the K3s bootstrapper:
+1. **Fork this repository** to your own GitHub account.
+2. Clone your **forked repository** onto the server and execute the K3s bootstrapper:
 
 ```bash
-# Clone your repository
+# Clone your FORKED repository
 git clone https://github.com/<your_github_username>/home-lab.git
 cd home-lab
 
