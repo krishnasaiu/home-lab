@@ -106,7 +106,10 @@ data:
             icon: uptime-kuma
             href: http://192.168.50.120:3001/
             description: Service Availability
-            ping: http://192.168.50.120:3001/
+            widget:
+              type: uptimekuma
+              url: http://localhost:3001
+              slug: default
     - Applications:
         - Home Assistant:
             icon: home-assistant
