@@ -100,6 +100,7 @@ deploy_workload() {
     fi
 
     echo "   Copying K3s manifest: $dest"
+    rm -f "$dest"
     cp -f "$src" "$dest"
 
     # 3. Touch the symlink to force K3s update
