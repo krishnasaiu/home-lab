@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: default
+data:
+  settings.yaml: |
+    title: Homelab Dashboard
+    background:
+      image: https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80
+      opacity: 0.15
+      blur: 10px
+    cardLayout: cols
+    showFavorites: false
+    theme: dark
+  widgets.yaml: |
+    - datetime:
+        format:
+          dateStyle: long
+          timeStyle: medium
+        timezone: Asia/Kolkata
+    - resources:
+        label: Server Host
+        cpu: true
+        memory: true
+        disk: /
+  services.yaml: |
+    - Infrastructure:
+        - Pi-hole:
+            icon: pi-hole
+            href: http://192.168.50.120/admin/
+            description: Ad Blocker & DNS
+            ping: http://192.168.50.120/admin/
+        - Cockpit:
+            icon: cockpit
+            href: http://192.168.50.120:9090/
+            description: Host Administration
+            ping: http://192.168.50.120:9090/
+    - Applications:
+        - Home Assistant:
+            icon: home-assistant
+            href: http://192.168.50.120:8123/
+            description: Smart Home Hub
+            ping: http://192.168.50.120:8123/
+        - Vaultwarden:
+            icon: vaultwarden
+            href: http://192.168.50.120:8080/
+            description: Password Manager
+            ping: http://192.168.50.120:8080/
+        - Paperless-ngx:
+            icon: paperless
+            href: http://192.168.50.120:8000/
+            description: Document Archiver
+            ping: http://192.168.50.120:8000/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage-service
+  namespace: default
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: homepage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+      volumes:
+        - name: config
+          configMap:
+            name: homepage-config
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homepage-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: dashboard.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage-service
+                port:
+                  number: 3000
