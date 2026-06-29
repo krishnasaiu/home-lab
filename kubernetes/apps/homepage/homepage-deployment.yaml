@@ -30,7 +30,19 @@ data:
             icon: pi-hole
             href: http://192.168.50.120/admin/
             description: Ad Blocker & DNS
-            ping: http://192.168.50.120/admin/
+            widget:
+              type: pihole
+              url: http://pihole-web.default.svc.cluster.local:80
+              key: "{{HOMEPAGE_VAR_PIHOLE_PASSWORD}}"
+              version: 6
+        - PostgreSQL:
+            icon: postgresql
+            description: Relational Database
+            ping: postgres-service.default.svc.cluster.local:5432
+        - Redis Cache:
+            icon: redis
+            description: Centralized Cache / MQ
+            ping: redis-service.default.svc.cluster.local:6379
         - Cockpit:
             icon: cockpit
             href: http://192.168.50.120:9090/
@@ -95,6 +107,11 @@ spec:
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
               value: "${host_ip},${host_ip}:3000,dashboard.homelab,dashboard.homelab:3000,localhost,localhost:3000,127.0.0.1,127.0.0.1:3000"
+            - name: HOMEPAGE_VAR_PIHOLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-admin
+                  key: password
           volumeMounts:
             - name: config
               mountPath: /app/config/settings.yaml
