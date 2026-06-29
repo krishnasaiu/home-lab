@@ -1,0 +1,53 @@
+# Language, Keyboard, and Locale
+d-i debian-installer/locale string en_US.UTF-8
+d-i keyboard-configuration/xkb-keymap select us
+
+# Networking Configuration (DHCP & Hostname)
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string homelab
+d-i netcfg/get_domain string local
+
+# Mirror Settings
+d-i mirror/country string manual
+d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+# Account Creation (User: krishna, Password: password123)
+d-i passwd/root-login boolean false
+d-i passwd/user-fullname string Krishna
+d-i passwd/username string krishna
+d-i passwd/user-password password password123
+d-i passwd/user-password-again password password123
+d-i user-setup/allow-password-weak boolean true
+
+# Timezone & Clock
+d-i clock-setup/utc boolean true
+d-i time/zone string Asia/Kolkata
+d-i clock-setup/ntp boolean true
+
+# Automated Disk Partitioning (Guided LVM using entire disk)
+d-i partman-auto/method string lvm
+d-i partman-auto-lvm/guided_size string max
+d-i partman-auto/choose_recipe select atomic
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman/confirm_write_new_label boolean true
+
+# Package Manager Configuration
+d-i apt-setup/non-free-firmware boolean true
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+
+# Bootloader Installation
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev string default
+
+# Finish Installation and Reboot
+d-i finish-install/reboot_in_progress note

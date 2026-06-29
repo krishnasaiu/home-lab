@@ -1,0 +1,67 @@
+name: Build Homelab Installer ISO
+
+on:
+  push:
+    paths:
+      - 'bootstrap/**'
+      - '.github/workflows/build-iso.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install ISO Building Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y simple-cdd xorriso rsync apt-utils
+
+      - name: Configure Custom Profile
+        run: |
+          # 1. Replace the repository URL placeholder with the active repo URL
+          sed -i "s|%%REPO_URL%%|https://github.com/${{ github.repository }}.git|g" bootstrap/iso/homelab.postinst
+          
+          # 2. Setup building workspace
+          mkdir -p my-cdd/profiles
+          cp bootstrap/iso/homelab.packages my-cdd/profiles/
+          cp bootstrap/iso/homelab.preseed my-cdd/profiles/
+          cp bootstrap/iso/homelab.postinst my-cdd/profiles/
+          chmod +x my-cdd/profiles/homelab.postinst
+
+      - name: Build Bootable ISO
+        run: |
+          cd my-cdd
+          # Run the simple-cdd compiler using the homelab profile settings
+          build-simple-cdd --profiles homelab
+          
+          # Verify ISO was created successfully
+          if [ ! -f images/debian-12-custom-amd64.iso ]; then
+            echo "Error: ISO was not created!"
+            exit 1
+          fi
+
+      - name: Publish Latest Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Clean up local and remote 'latest' tags/releases to only keep the newest build
+          echo "Cleaning up previous latest release..."
+          gh release delete latest --yes || true
+          
+          # Remove local tag
+          git tag -d latest || true
+          # Remove remote tag on origin
+          git push origin :refs/tags/latest || true
+
+          # 2. Create the fresh release and attach the new bootable ISO
+          echo "Creating new latest release with the compiled ISO..."
+          gh release create latest ./my-cdd/images/debian-12-custom-amd64.iso \
+            --title "Latest Homelab Installer ISO" \
+            --notes "Automated bootable custom Debian ISO containing K3s, Cockpit console, pre-created volume paths, and default configurations. Simply write to a USB and boot your clean server to deploy." \
+            --target main

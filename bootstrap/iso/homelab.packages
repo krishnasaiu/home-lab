@@ -1,0 +1,11 @@
+# Core system utilities
+sudo
+wget
+curl
+git
+openssh-server
+ca-certificates
+
+# System Management console
+cockpit
+cockpit-podman

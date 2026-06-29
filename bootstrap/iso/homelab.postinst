@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+echo "=== Running Homelab Post-Installation Script ==="
+
+# 1. Download and Install Cockpit Navigator (45Drives File Manager)
+wget -O /tmp/navigator.deb https://github.com/45Drives/cockpit-navigator/releases/download/v0.5.8/cockpit-navigator_0.5.8-1focal_all.deb
+dpkg -i /tmp/navigator.deb || apt-get install -f -y
+rm /tmp/navigator.deb
+
+# 2. Pre-create required host directories
+mkdir -p /home/krishna/scans
+mkdir -p /home/krishna/homeassistant_config
+chown -R 1000:1000 /home/krishna/scans /home/krishna/homeassistant_config
+chmod -R 755 /home/krishna/scans /home/krishna/homeassistant_config
+
+# 3. Clone this homelab repository
+echo "Cloning repository from %%REPO_URL%%..."
+git clone "%%REPO_URL%%" /home/krishna/home-lab
+chown -R 1000:1000 /home/krishna/home-lab
+
+# 4. Make scripts executable
+chmod +x /home/krishna/home-lab/bootstrap/install-k3s.sh
+chmod +x /home/krishna/home-lab/bootstrap/bootstrap-flux-cd.sh
+chmod +x /home/krishna/home-lab/scripts/*.sh
+
+# 5. Run the K3s installation script directly
+export DEBIAN_FRONTEND=noninteractive
+/home/krishna/home-lab/bootstrap/install-k3s.sh
