@@ -21,12 +21,7 @@ data:
           dateStyle: long
           timeStyle: medium
         timezone: Asia/Kolkata
-    - beszel:
-        url: http://localhost:8090
-        username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
-        password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
-        systemId: homelab
-        version: 2
+
   services.yaml: |
     - Infrastructure:
         - Pi-hole:
@@ -55,7 +50,13 @@ data:
             icon: beszel
             href: http://192.168.50.120:8090/
             description: Resource Monitoring
-            ping: http://192.168.50.120:8090/
+            widget:
+              type: beszel
+              url: http://localhost:8090
+              username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
+              password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
+              systemId: homelab
+              version: 2
     - Applications:
         - Home Assistant:
             icon: home-assistant
