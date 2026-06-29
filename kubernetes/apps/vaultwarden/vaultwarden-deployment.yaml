@@ -18,8 +18,8 @@ metadata:
   namespace: default
 spec:
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 8080
+      targetPort: 8080
       protocol: TCP
   selector:
     app: vaultwarden
@@ -39,12 +39,14 @@ spec:
       labels:
         app: vaultwarden
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: vaultwarden
           image: docker.io/vaultwarden/server:alpine
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           env:
             - name: DATABASE_URL
@@ -52,6 +54,8 @@ spec:
                 secretKeyRef:
                   name: postgres-credentials
                   key: db_url_vaultwarden
+            - name: ROCKET_PORT
+              value: "8080"
           volumeMounts:
             - name: vaultwarden-data
               mountPath: /data
@@ -85,4 +89,4 @@ spec:
               service:
                 name: vaultwarden-service
                 port:
-                  number: 80
+                  number: 8080
