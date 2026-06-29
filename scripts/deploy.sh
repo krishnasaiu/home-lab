@@ -99,8 +99,8 @@ deploy_workload() {
         fi
     fi
 
-    echo "   Creating K3s manifest symlink: $dest -> $src"
-    ln -sf "$src" "$dest"
+    echo "   Copying K3s manifest: $dest"
+    cp -f "$src" "$dest"
 
     # 3. Touch the symlink to force K3s update
     echo "   Triggering K3s manifest scan..."
