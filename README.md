@@ -74,11 +74,43 @@ Because we use GitOps, **there are no deploy scripts to run on the server**. You
    ```
 3. Within 60 seconds, Flux will detect the push, reconcile the change, and apply it directly to the cluster.
 
-### Retreiving Passwords
-To fetch the auto-generated credentials for your apps, run the helper script on the Debian server:
+### Retrieving Passwords
+To fetch the auto-generated credentials for your apps, run the helper script on the Debian server (or on your Mac if kubeconfig is exported):
 ```bash
 ./scripts/get-password.sh pihole
 ```
+
+### Connecting Home Assistant to PostgreSQL
+By default, Home Assistant uses SQLite. To migrate it to the centralized PostgreSQL deployment:
+
+1.  **Fix file ownership** on the Debian server so you can edit the configuration file without `sudo`:
+    ```bash
+    sudo chown -R krishna:krishna /home/krishna/homeassistant_config
+    ```
+2.  **Append the database url** to the bottom of `/home/krishna/homeassistant_config/configuration.yaml`:
+    ```yaml
+    recorder:
+      db_url: !env_var DB_URL
+    ```
+3.  **Restart Home Assistant** to apply the configuration:
+    ```bash
+    kubectl rollout restart deployment/homeassistant
+    ```
+
+### Port Forwarding for Local Management (DBeaver & Vaultwarden Secure Contexts)
+For database administration (e.g. using DBeaver) or secure browser contexts (e.g. accessing Vaultwarden Web UI to avoid Subtle Crypto API errors), forward the cluster services to your local Mac using `kubectl`:
+
+```bash
+# 1. Forward PostgreSQL to local port 5432 (e.g. for DBeaver)
+kubectl --kubeconfig=~/.kube/config-homelab port-forward service/postgres-service 5432:5432 -n default
+
+# 2. Forward Vaultwarden to local port 8080 (for Subtle Crypto API compatibility)
+kubectl --kubeconfig=~/.kube/config-homelab port-forward service/vaultwarden-service 8080:8080 -n default
+```
+
+Once forwarded:
+*   Connect DBeaver to `localhost:5432` using username `postgres` and the password retrieved from `./scripts/get-password.sh postgres`.
+*   Access Vaultwarden in a browser at [http://localhost:8080/](http://localhost:8080/) (this bypasses browser insecure context blocks on cryptographic APIs).
 
 ---
 
