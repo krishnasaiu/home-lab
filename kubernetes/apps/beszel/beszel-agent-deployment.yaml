@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beszel-agent
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: beszel-agent
+  template:
+    metadata:
+      labels:
+        app: beszel-agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: beszel-agent
+          image: docker.io/henrygd/beszel-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 45876
+              name: port
+          env:
+            - name: PORT
+              value: "45876"
+            - name: KEY
+              value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINszm7SUug+e5bFoB7mHrVrzpzJHc+IBnbklfE5e05tF"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: host-proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: host-sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: host-root
+              mountPath: /host
+              readOnly: true
+          resources:
+            limits:
+              cpu: 250m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        - name: host-proc
+          hostPath:
+            path: /proc
+        - name: host-sys
+          hostPath:
+            path: /sys
+        - name: host-root
+          hostPath:
+            path: /

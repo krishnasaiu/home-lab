@@ -78,7 +78,14 @@ elif ! kubectl get secret postgres-credentials -n default -o jsonpath="{.data.db
       --from-literal=db_url_paperless="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/paperless"
 fi
 
-# 6. Exit early if Flux is already bootstrapped
+# 6. Ensure beszel-credentials secret exists (created manually for security)
+if ! kubectl get secret beszel-credentials -n default &>/dev/null; then
+    echo -e "${RED}[ERROR] Secret 'beszel-credentials' not found. Please run the following command to create it securely:${NC}"
+    echo -e "    kubectl create secret generic beszel-credentials -n default --from-literal=username=\"your_email\" --from-literal=password=\"your_password\""
+    exit 1
+fi
+
+# 7. Exit early if Flux is already bootstrapped
 if [ "$FLUX_EXISTS" = true ]; then
     echo -e "${GREEN}[✔] Flux CD is already running in the cluster. Skipping Git repository link setup.${NC}"
     echo -e "${YELLOW}[+] Triggering reconciliation to apply latest changes...${NC}"

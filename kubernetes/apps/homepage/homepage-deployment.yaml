@@ -21,11 +21,10 @@ data:
           dateStyle: long
           timeStyle: medium
         timezone: Asia/Kolkata
-    - resources:
-        label: Server Host
-        cpu: true
-        memory: true
-        disk: /
+    - beszel:
+        url: http://beszel-hub-service.default.svc.cluster.local:8090
+        username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
+        password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
   services.yaml: |
     - Infrastructure:
         - Pi-hole:
@@ -118,6 +117,16 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: pihole-admin
+                  key: password
+            - name: HOMEPAGE_VAR_BESZEL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: beszel-credentials
+                  key: username
+            - name: HOMEPAGE_VAR_BESZEL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: beszel-credentials
                   key: password
           volumeMounts:
             - name: config
