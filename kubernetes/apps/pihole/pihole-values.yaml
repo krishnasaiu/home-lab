@@ -45,6 +45,11 @@ extraEnvVars:
   TZ: "Asia/Kolkata"
   FTLCONF_dns_listeningMode: "all" # Required for Kubernetes to receive internal pod traffic
 
+# Use modern stable image release (which has jq and API endpoints for health probes)
+image:
+  repository: "pihole/pihole"
+  tag: "2024.07.0"
+
 # Persistent Storage Configurations
 # Uses the K3s default 'local-path' provisioner which persists data across pod restarts.
 persistentVolumeClaim:
