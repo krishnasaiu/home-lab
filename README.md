@@ -39,7 +39,7 @@ Follow these sequential phases to replicate the entire stack from scratch:
 
 ### Option A: Fully Automated Setup (Recommended Custom ISO)
 1. **Fork this repository** to your own GitHub account.
-2. Go to your repository's **Releases** tab and download the custom bootable installer ISO (`debian-12-custom-amd64.iso`) under the `latest` release tag.
+2. Go to your repository's **Releases** tab and download the custom bootable installer ISO (`debian-12-amd64-CD-1.iso`) under the `latest` release tag.
 3. Write this ISO to a USB flash drive (using Rufus, BalenaEtcher, or Ventoy).
 4. Boot your clean server from the USB. **The installer runs with zero keystrokes**: it automatically partitions the disk, installs Debian Stable, creates the administrator user, pre-installs Cockpit (including the visual navigator), clones your repository fork, pre-configures your volume directories, sets up Home Assistant database mappings, and pre-installs the K3s server.
 5. Once installation finishes, boot the server and proceed directly to **Phase 3: Bootstrap Flux CD**!
