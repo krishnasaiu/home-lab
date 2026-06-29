@@ -67,6 +67,7 @@ spec:
         - address=/dashboard.homelab/${host_ip}
         - address=/pgweb.homelab/${host_ip}
         - address=/redis-commander.homelab/${host_ip}
+        - address=/beszel.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"

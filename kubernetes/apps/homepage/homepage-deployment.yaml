@@ -50,6 +50,11 @@ data:
             href: http://192.168.50.120:9090/
             description: Host Administration
             ping: http://192.168.50.120:9090/
+        - Beszel Monitor:
+            icon: beszel
+            href: http://192.168.50.120:8090/
+            description: Resource Monitoring
+            ping: http://192.168.50.120:8090/
     - Applications:
         - Home Assistant:
             icon: home-assistant

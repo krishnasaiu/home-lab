@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: beszel-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beszel-hub-service
+  namespace: default
+spec:
+  ports:
+    - port: 8090
+      targetPort: 8090
+      protocol: TCP
+  selector:
+    app: beszel-hub
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beszel-hub
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: beszel-hub
+  template:
+    metadata:
+      labels:
+        app: beszel-hub
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: beszel-hub
+          image: docker.io/henrygd/beszel:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+              name: http
+          volumeMounts:
+            - name: beszel-data
+              mountPath: /beszel_data
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+      volumes:
+        - name: beszel-data
+          persistentVolumeClaim:
+            claimName: beszel-pvc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: beszel-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: beszel.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: beszel-hub-service
+                port:
+                  number: 8090
