@@ -98,14 +98,17 @@ By default, Home Assistant uses SQLite. To migrate it to the centralized Postgre
     ```
 
 ### Port Forwarding for Local Management (DBeaver & Vaultwarden Secure Contexts)
-For database administration (e.g. using DBeaver) or secure browser contexts (e.g. accessing Vaultwarden Web UI to avoid Subtle Crypto API errors), forward the cluster services to your local Mac using `kubectl`:
+For database administration (e.g. using DBeaver) or secure browser contexts (e.g. accessing Vaultwarden Web UI to avoid Subtle Crypto API errors), use the helper script to forward cluster services to your local Mac:
 
 ```bash
-# 1. Forward PostgreSQL to local port 5432 (e.g. for DBeaver)
-kubectl --kubeconfig=~/.kube/config-homelab port-forward service/postgres-service 5432:5432 -n default
+# Forward only PostgreSQL (port 5432)
+./scripts/port-forward.sh postgres
 
-# 2. Forward Vaultwarden to local port 8080 (for Subtle Crypto API compatibility)
-kubectl --kubeconfig=~/.kube/config-homelab port-forward service/vaultwarden-service 8080:8080 -n default
+# Forward only Vaultwarden (port 8080)
+./scripts/port-forward.sh vaultwarden
+
+# Forward BOTH services simultaneously (runs in background, automatically cleanups on Ctrl+C)
+./scripts/port-forward.sh all
 ```
 
 Once forwarded:
