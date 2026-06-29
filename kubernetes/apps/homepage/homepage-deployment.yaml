@@ -26,6 +26,7 @@ data:
         username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
         password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
         systemId: homelab
+        version: 2
   services.yaml: |
     - Infrastructure:
         - Pi-hole:
