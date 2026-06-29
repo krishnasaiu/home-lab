@@ -77,26 +77,12 @@ deploy_workload() {
         return 1
     fi
 
-    # Auto-detect if this is a HelmChart and delete existing resource to avoid revision lock
+    # Auto-detect if this is a HelmChart and extract name
     if grep -q "kind: HelmChart" "$src"; then
         # Parse name and namespace using basic text parsing (safe and doesn't require yq)
         local hc_name=$(grep -A 5 -m 1 "metadata:" "$src" | grep "name:" | awk '{print $2}' | tr -d '"'\''')
         local hc_ns=$(grep -A 5 -m 1 "metadata:" "$src" | grep "namespace:" | awk '{print $2}' | tr -d '"'\''')
         hc_ns=${hc_ns:-kube-system}
-        
-        if [ -n "$hc_name" ]; then
-            echo "   [HelmChart] Detected HelmChart: $hc_name in namespace $hc_ns"
-            # Delete the existing HelmChart CRD and wait for it to be completely gone
-            if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
-                echo "   [HelmChart] Deleting existing HelmChart resource to clear locks/revisions..."
-                kubectl delete helmchart "$hc_name" -n "$hc_ns" --wait=true --timeout=30s || true
-            fi
-            # Delete the associated helm-install job as well to prevent watcher race conditions
-            if kubectl get job "helm-install-$hc_name" -n "$hc_ns" &>/dev/null; then
-                echo "   [HelmChart] Deleting old installer job..."
-                kubectl delete job "helm-install-$hc_name" -n "$hc_ns" --wait=true --timeout=30s || true
-            fi
-        fi
     fi
 
     echo "   Copying and templating K3s manifest: $dest"
