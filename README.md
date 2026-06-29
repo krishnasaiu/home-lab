@@ -196,3 +196,9 @@ We run Paperless-ngx in the cluster to automatically OCR and archive physical sc
 *   **Direct IP**: [http://192.168.50.120:8000/](http://192.168.50.120:8000/)
 *   **Local DNS**: [http://paperless.homelab/](http://paperless.homelab/)
 *   **Local Port Forward**: `./scripts/port-forward.sh paperless` (exposes it at `http://localhost:8000/`)
+
+### Creating an Administrator Account:
+When setting up Paperless-ngx for the first time, you must manually generate your administrator login. Run this command on your **Debian Server**:
+```bash
+kubectl exec -it deployment/paperless -n default -c paperless -- createsuperuser
+```
