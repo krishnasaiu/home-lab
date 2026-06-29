@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homeassistant
+  namespace: default
+  labels:
+    app: homeassistant
+  annotations:
+    keel.sh/policy: "force" # Force updates when the image digest changes, even on same tag (stable)
+    keel.sh/trigger: "poll"
+    keel.sh/poll: "24h" # Poll registry once a day
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homeassistant
+  template:
+    metadata:
+      labels:
+        app: homeassistant
+    spec:
+      hostNetwork: true # Required for SSDP, mDNS, and local smart device discovery
+      dnsPolicy: ClusterFirstWithHostNet # Ensures internal cluster DNS still resolves inside the pod
+      containers:
+        - name: homeassistant
+          image: ghcr.io/home-assistant/home-assistant:stable
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: "Asia/Kolkata"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: time-volume
+              mountPath: /etc/localtime
+              readOnly: true
+      volumes:
+        - name: config-volume
+          hostPath:
+            path: /home/krishna/homeassistant_config
+            type: DirectoryOrCreate
+        - name: time-volume
+          hostPath:
+            path: /etc/localtime
+            type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homeassistant
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 8123
+      protocol: TCP
+      targetPort: 8123
+  selector:
+    app: homeassistant
+  type: ClusterIP
+---
+apiVersion: navigation.k8s.io/v1 # Traefik Ingress standard
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homeassistant
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: homeassistant.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homeassistant
+                port:
+                  number: 8123
