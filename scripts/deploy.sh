@@ -100,8 +100,36 @@ deploy_workload() {
     echo "   Triggering K3s manifest scan..."
     touch -h "$dest"
     
-    echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}"
-    echo -e "${YELLOW}   [TIP] If K3s doesn't pick up the change immediately, run: sudo systemctl restart k3s${NC}\n"
+    # Watch if the changes are picked up by K3s Helm controller
+    if [ -n "${hc_name:-}" ]; then
+        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job (max 2m): "
+        local start_time=$(date +%s)
+        local timeout=120
+        local success=false
+        
+        while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
+            # Check if K3s has recreated the HelmChart resource and completed the install job
+            if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
+                local job_status=$(kubectl get job "helm-install-$hc_name" -n "$hc_ns" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
+                if [ "$job_status" = "True" ]; then
+                    echo -e "\n${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates!${NC}"
+                    success=true
+                    break
+                fi
+                echo -n "."
+            else
+                echo -n "?"
+            fi
+            sleep 5
+        done
+        
+        if [ "$success" = false ]; then
+            echo -e "\n${RED}   [WARNING] K3s has not completed the HelmChart update after 2 minutes.${NC}"
+            echo -e "${YELLOW}   ==> Action Required: Please restart K3s to force a scan: sudo systemctl restart k3s${NC}"
+        fi
+    fi
+
+    echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}\n"
 }
 
 # Run deployment
