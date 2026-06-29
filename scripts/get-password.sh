@@ -48,6 +48,9 @@ case "$SERVICE_NAME" in
     pihole)
         SECRET_NAME="pihole-admin"
         ;;
+    postgres|postgresql)
+        SECRET_NAME="postgres-credentials"
+        ;;
     *)
         # Default fallback guess
         SECRET_NAME="${SERVICE_NAME}-admin"
