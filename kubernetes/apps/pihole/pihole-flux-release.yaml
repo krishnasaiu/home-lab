@@ -30,8 +30,6 @@ spec:
   values:
     admin:
       enabled: true
-      existingSecret: "pihole-admin"
-      passwordKey: "password"
     DNS1: "127.0.0.1#5335"
     DNS2: ""
     serviceDns:
