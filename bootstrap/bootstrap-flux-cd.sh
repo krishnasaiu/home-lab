@@ -58,6 +58,13 @@ kubectl create configmap cluster-settings -n flux-system \
   --from-literal=host_ip="$HOST_IP" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Pre-populate pihole-admin secret with a clean alphanumeric password if it does not exist
+if ! kubectl get secret pihole-admin -n default &>/dev/null; then
+    echo -e "${YELLOW}[+] Auto-generating secure alphanumeric password for Pi-hole...${NC}"
+    PIHOLE_PASS=$(openssl rand -hex 12)
+    kubectl create secret generic pihole-admin -n default --from-literal=password="$PIHOLE_PASS"
+fi
+
 # 6. Run Flux Bootstrap
 echo -e "${YELLOW}[+] Running Flux Bootstrap on GitHub repository ${GH_OWNER}/${GH_REPO}...${NC}"
 flux bootstrap github \
