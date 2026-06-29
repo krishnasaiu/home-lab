@@ -106,32 +106,27 @@ deploy_workload() {
         local target_ns=$(grep "targetNamespace:" "$src" | awk '{print $2}' | tr -d '"'\''')
         target_ns=${target_ns:-default}
 
-        echo -n "   [HelmChart] Waiting for K3s to initialize and create deployment '$hc_name'..."
+        echo -n "   [HelmChart] Watching for deployment rollout in namespace '$target_ns'..."
         local start_time=$(date +%s)
         local timeout=120
-        local created=false
+        local success=false
         
         while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
-            if kubectl get deployment "$hc_name" -n "$target_ns" &>/dev/null; then
-                created=true
+            # Check if deployment rollout is complete
+            if kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=10s &>/dev/null; then
+                echo -e "\r\033[K${GREEN}   [SUCCESS] Deployment is fully rolled out and ready!${NC}"
+                success=true
                 break
             fi
-            echo -ne "\r\033[K   [HelmChart] Status: Reconciling. Waiting for K3s to apply Helm release..."
+            echo -ne "\r\033[K   [HelmChart] Status: Reconciling. Waiting for deployment pods to become ready..."
             sleep 4
         done
         
-        if [ "$created" = false ]; then
-            echo -e "\r\033[K${RED}   [ERROR] K3s failed to create the deployment resource within 2 minutes.${NC}"
-            echo -e "${YELLOW}   [TIP] Check K3s Helm job status using: kubectl get jobs -n $target_ns${NC}"
+        if [ "$success" = false ]; then
+            echo -e "\r\033[K${RED}   [ERROR] Deployment failed to roll out within 2 minutes.${NC}"
+            echo -e "${YELLOW}   [TIP] Run: kubectl get pods -n $target_ns -l app=$hc_name to inspect.${NC}"
             return 1
         fi
-        
-        echo -e "\r\033[K${GREEN}   [HelmChart] Deployment detected. Watching rollout progress:${NC}"
-        if ! kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=120s; then
-            echo -e "${RED}   [ERROR] Deployment failed to roll out successfully.${NC}"
-            return 1
-        fi
-        echo -e "${GREEN}   [SUCCESS] Deployment is fully rolled out and ready!${NC}"
     fi
 
     echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}\n"
