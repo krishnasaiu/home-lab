@@ -60,18 +60,11 @@ data:
           dateStyle: long
           timeStyle: medium
         timezone: Asia/Kolkata
-    - kubernetes:
-        cluster:
-          show: true
-          cpu: true
-          memory: true
-          nodes: true
-          showLabel: true
-        nodes:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
+    - resources:
+        label: Server Host
+        cpu: true
+        memory: true
+        disk: /
 
   services.yaml: |
     - Infrastructure:
