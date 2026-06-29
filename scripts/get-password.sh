@@ -46,7 +46,7 @@ fi
 # Define custom mappings if the secret name doesn't match <service>-admin
 case "$SERVICE_NAME" in
     pihole)
-        SECRET_NAME="pihole"
+        SECRET_NAME="pihole-password"
         ;;
     *)
         # Default fallback guess
