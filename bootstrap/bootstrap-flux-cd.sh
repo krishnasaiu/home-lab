@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Homelab Flux CD Bootstrapper
+# This script installs the Flux CLI, configures local host settings, and bootstraps GitOps.
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${CYAN}=== Homelab Flux CD GitOps Bootstrapper ===${NC}\n"
+
+# 1. Ask for GitHub Username & Repository details
+read -rp "Enter GitHub Owner/Username [krishnasaiu]: " GH_OWNER
+GH_OWNER=${GH_OWNER:-krishnasaiu}
+
+read -rp "Enter GitHub Repository Name [home-lab]: " GH_REPO
+GH_REPO=${GH_REPO:-home-lab}
+
+# 2. Ask for GitHub Personal Access Token (PAT) securely
+read -rsp "Enter GitHub Personal Access Token (PAT) with repo scope: " GITHUB_TOKEN
+echo ""
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo -e "${RED}[ERROR] GitHub Personal Access Token cannot be empty.${NC}"
+    exit 1
+fi
+
+# Export token for Flux CLI
+export GITHUB_TOKEN
+
+# 3. Stop old git-sync systemd service if running
+if systemctl is-active --quiet homelab-git-sync.service &>/dev/null; then
+    echo -e "${YELLOW}[+] Stopping and disabling old homelab-git-sync service...${NC}"
+    sudo systemctl disable --now homelab-git-sync.service || true
+fi
+
+# 4. Install Flux CLI if not present
+if ! command -v flux &>/dev/null; then
+    echo -e "${YELLOW}[+] Installing Flux CLI...${NC}"
+    curl -s https://fluxcd.io/install.sh | sudo bash
+else
+    echo -e "${GREEN}[✔] Flux CLI is already installed.${NC}"
+fi
+
+# 5. Create namespace and pre-populate cluster-settings ConfigMap with host LAN IP
+echo -e "${YELLOW}[+] Generating cluster-settings ConfigMap...${NC}"
+HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $(NF-2); exit}' || hostname -I | awk '{print $1}')
+HOST_IP=$(echo "$HOST_IP" | xargs)
+HOST_IP=${HOST_IP:-127.0.0.1}
+
+echo -e "    Detected LAN IP: ${GREEN}$HOST_IP${NC}"
+
+kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap cluster-settings -n flux-system \
+  --from-literal=host_ip="$HOST_IP" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# 6. Run Flux Bootstrap
+echo -e "${YELLOW}[+] Running Flux Bootstrap on GitHub repository ${GH_OWNER}/${GH_REPO}...${NC}"
+flux bootstrap github \
+  --owner="$GH_OWNER" \
+  --repository="$GH_REPO" \
+  --branch=main \
+  --path=./kubernetes/flux-system \
+  --personal
+
+echo -e "\n${GREEN}[SUCCESS] Flux CD successfully bootstrapped!${NC}"
+echo -e "You can monitor the sync progress using: ${CYAN}flux get kustomizations -A${NC}"
