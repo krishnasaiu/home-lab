@@ -99,9 +99,14 @@ deploy_workload() {
         fi
     fi
 
-    echo "   Copying K3s manifest: $dest"
+    echo "   Copying and templating K3s manifest: $dest"
     rm -f "$dest"
-    cp -f "$src" "$dest"
+    # Get host IP address dynamically (primary interface IP)
+    local host_ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $(NF-2); exit}' || hostname -I | awk '{print $1}')
+    host_ip=$(echo "$host_ip" | xargs) # trim whitespace
+    host_ip=${host_ip:-127.0.0.1}
+    # Write to destination replacing __HOST_IP__ template values
+    sed "s/__HOST_IP__/$host_ip/g" "$src" > "$dest"
 
     # 3. Touch the symlink to force K3s update
     echo "   Triggering K3s manifest scan..."

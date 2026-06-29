@@ -28,6 +28,7 @@ spec:
         kubernetes.io/ingress.class: traefik
       hosts:
         - pihole.homelab
+        - __HOST_IP__
       path: /
 
     extraEnvVars:
@@ -50,6 +51,9 @@ spec:
       storageClass: "local-path"
       size: 5Gi
     dnsmasq:
+      customDnsEntries:
+        - address=/pihole.homelab/__HOST_IP__
+        - address=/homeassistant.homelab/__HOST_IP__
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"
