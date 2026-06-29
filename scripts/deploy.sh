@@ -120,27 +120,32 @@ deploy_workload() {
         local target_ns=$(grep "targetNamespace:" "$src" | awk '{print $2}' | tr -d '"'\''')
         target_ns=${target_ns:-default}
 
-        echo -n "   [HelmChart] Watching for deployment rollout in namespace '$target_ns'..."
+        echo -n "   [HelmChart] Waiting for K3s to initialize and create deployment '$hc_name'..."
         local start_time=$(date +%s)
         local timeout=120
-        local success=false
+        local created=false
         
         while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
-            # Check if deployment rollout is complete
-            if kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=3s &>/dev/null; then
-                echo -e "\r\033[K${GREEN}   [SUCCESS] Deployment is fully rolled out and ready!${NC}"
-                success=true
+            if kubectl get deployment "$hc_name" -n "$target_ns" &>/dev/null; then
+                created=true
                 break
             fi
-            echo -ne "\r\033[K   [HelmChart] Status: Reconciling. Waiting for pods to become ready..."
-            sleep 3
+            echo -ne "\r\033[K   [HelmChart] Status: Reconciling. Waiting for K3s to apply Helm release..."
+            sleep 4
         done
         
-        if [ "$success" = false ]; then
-            echo -e "\r\033[K${RED}   [ERROR] Deployment failed to roll out within 2 minutes.${NC}"
-            echo -e "${YELLOW}   [TIP] If K3s is slow, run: kubectl get pods -n $target_ns -l app=$hc_name to inspect.${NC}"
+        if [ "$created" = false ]; then
+            echo -e "\r\033[K${RED}   [ERROR] K3s failed to create the deployment resource within 2 minutes.${NC}"
+            echo -e "${YELLOW}   [TIP] Check K3s Helm job status using: kubectl get jobs -n $target_ns${NC}"
             return 1
         fi
+        
+        echo -e "\r\033[K${GREEN}   [HelmChart] Deployment detected. Watching rollout progress:${NC}"
+        if ! kubectl rollout status deployment/"$hc_name" -n "$target_ns" --timeout=120s; then
+            echo -e "${RED}   [ERROR] Deployment failed to roll out successfully.${NC}"
+            return 1
+        fi
+        echo -e "${GREEN}   [SUCCESS] Deployment is fully rolled out and ready!${NC}"
     fi
 
     echo -e "${GREEN}[SUCCESS] Deployed $app successfully!${NC}\n"
