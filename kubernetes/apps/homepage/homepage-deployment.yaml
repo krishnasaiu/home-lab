@@ -22,9 +22,10 @@ data:
           timeStyle: medium
         timezone: Asia/Kolkata
     - beszel:
-        url: http://beszel-hub-service.default.svc.cluster.local:8090
+        url: http://localhost:8090
         username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
         password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
+        systemId: homelab
   services.yaml: |
     - Infrastructure:
         - Pi-hole:
