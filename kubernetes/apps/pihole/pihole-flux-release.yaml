@@ -65,6 +65,8 @@ spec:
         - address=/vaultwarden.homelab/${host_ip}
         - address=/paperless.homelab/${host_ip}
         - address=/dashboard.homelab/${host_ip}
+        - address=/pgweb.homelab/${host_ip}
+        - address=/redis-commander.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"

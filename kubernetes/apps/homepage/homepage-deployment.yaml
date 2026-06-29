@@ -39,9 +39,11 @@ data:
               version: 6
         - PostgreSQL:
             icon: postgresql
+            href: http://192.168.50.120:8085/
             description: Relational Database
         - Redis Cache:
             icon: redis
+            href: http://192.168.50.120:8086/
             description: Centralized Cache / MQ
         - Cockpit:
             icon: cockpit

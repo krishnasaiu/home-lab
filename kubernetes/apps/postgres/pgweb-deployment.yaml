@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgweb-service
+  namespace: default
+spec:
+  ports:
+    - port: 8085
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    app: pgweb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgweb
+  namespace: default
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pgweb
+  template:
+    metadata:
+      labels:
+        app: pgweb
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: pgweb
+          image: docker.io/sosedoff/pgweb:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --listen=8085
+          ports:
+            - containerPort: 8085
+              name: http
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASS)@postgres-service.default.svc.cluster.local:5432/postgres?sslmode=disable"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgweb-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: pgweb.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgweb-service
+                port:
+                  number: 8085
