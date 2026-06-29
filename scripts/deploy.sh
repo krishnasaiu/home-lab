@@ -109,9 +109,9 @@ deploy_workload() {
     
     # Watch if the changes are picked up by K3s Helm controller
     if [ -n "${hc_name:-}" ]; then
-        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job (max 2m)..."
+        echo -n "   [HelmChart] Watching for K3s to reconcile and run install job..."
         local start_time=$(date +%s)
-        local timeout=120
+        local timeout=25
         local success=false
         
         while [ $(($(date +%s) - start_time)) -lt $timeout ]; do
@@ -130,9 +130,33 @@ deploy_workload() {
             sleep 5
         done
         
+        # If it timed out, automatically restart K3s to force-trigger the reconciliation
         if [ "$success" = false ]; then
-            echo -e "\n${RED}   [WARNING] K3s has not completed the HelmChart update after 2 minutes.${NC}"
-            echo -e "${YELLOW}   ==> Action Required: Please restart K3s to force a scan: sudo systemctl restart k3s${NC}"
+            echo -e "\r\033[K${YELLOW}   [WARNING] K3s did not pick up the update within 25 seconds. Restarting K3s service...${NC}"
+            systemctl restart k3s
+            echo -n "   [HelmChart] K3s restarted. Waiting for installation job to complete (max 90s)..."
+            
+            local post_restart_start=$(date +%s)
+            local post_restart_timeout=90
+            while [ $(($(date +%s) - post_restart_start)) -lt $post_restart_timeout ]; do
+                if kubectl get helmchart "$hc_name" -n "$hc_ns" &>/dev/null; then
+                    local job_status=$(kubectl get job "helm-install-$hc_name" -n "$hc_ns" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
+                    if [ "$job_status" = "True" ]; then
+                        echo -e "\r\033[K${GREEN}   [SUCCESS] K3s successfully applied HelmChart updates after restart!${NC}"
+                        success=true
+                        break
+                    fi
+                    echo -ne "\r\033[K   [HelmChart] Status: Recreated. Running installation job..."
+                else
+                    echo -ne "\r\033[K   [HelmChart] Status: Waiting for K3s to initialize and scan manifests..."
+                fi
+                sleep 5
+            done
+        fi
+        
+        if [ "$success" = false ]; then
+            echo -e "\r\033[K${RED}   [ERROR] K3s failed to apply the HelmChart after restart.${NC}"
+            return 1
         fi
     fi
 
