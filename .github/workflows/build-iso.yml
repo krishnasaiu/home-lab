@@ -36,8 +36,9 @@ jobs:
             debian:bookworm-slim sh -c "
               apt-get update &&
               apt-get install -y simple-cdd xorriso rsync apt-utils debian-archive-keyring &&
-              cd my-cdd &&
-              build-simple-cdd --dist bookworm --profiles homelab
+              useradd -m builder &&
+              chown -R builder:builder /workspace &&
+              su builder -c 'cd my-cdd && build-simple-cdd --dist bookworm --profiles homelab'
             "
 
           # 4. Verify ISO was created successfully
