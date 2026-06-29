@@ -21,6 +21,8 @@ data:
           dateStyle: long
           timeStyle: medium
         timezone: Asia/Kolkata
+    - resources:
+        uptime: true
 
   services.yaml: |
     - Infrastructure:
