@@ -64,7 +64,18 @@ if ! kubectl get secret postgres-credentials -n default &>/dev/null; then
     kubectl create secret generic postgres-credentials -n default \
       --from-literal=password="$POSTGRES_PASS" \
       --from-literal=db_url_homeassistant="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/homeassistant" \
-      --from-literal=db_url_vaultwarden="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/vaultwarden"
+      --from-literal=db_url_vaultwarden="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/vaultwarden" \
+      --from-literal=db_url_paperless="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/paperless"
+elif ! kubectl get secret postgres-credentials -n default -o jsonpath="{.data.db_url_paperless}" &>/dev/null; then
+    echo -e "${YELLOW}[+] Adding paperless database URL to existing postgres-credentials secret...${NC}"
+    # Read existing password to preserve it
+    POSTGRES_PASS=$(kubectl get secret postgres-credentials -n default -o jsonpath="{.data.password}" | base64 --decode)
+    kubectl delete secret postgres-credentials -n default &>/dev/null || true
+    kubectl create secret generic postgres-credentials -n default \
+      --from-literal=password="$POSTGRES_PASS" \
+      --from-literal=db_url_homeassistant="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/homeassistant" \
+      --from-literal=db_url_vaultwarden="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/vaultwarden" \
+      --from-literal=db_url_paperless="postgresql://postgres:$POSTGRES_PASS@postgres-service.default.svc.cluster.local:5432/paperless"
 fi
 
 # 6. Exit early if Flux is already bootstrapped

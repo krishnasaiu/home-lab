@@ -20,6 +20,7 @@ data:
   init.sql: |
     CREATE DATABASE homeassistant;
     CREATE DATABASE vaultwarden;
+    CREATE DATABASE paperless;
 ---
 apiVersion: v1
 kind: Service

@@ -181,3 +181,18 @@ Configure your printer/scanner with the following parameters:
 
 ### B. Traefik Ingress Host Constraints
 *   Standard Ingress specs reject raw IP addresses as routing hosts. To support accessing dashboards via both IP (`http://192.168.50.120/`) and domain (`http://pihole.homelab/`), use a separate custom Ingress containing a catch-all rule (omitting the `host` field).
+
+---
+
+## 9. Paperless-ngx (Document Management System)
+We run Paperless-ngx in the cluster to automatically OCR and archive physical scanned documents.
+
+### How the Scanner Integration Works:
+1.  **Scanner Uploads File**: Your physical network scanner uploads scans via FTP (port 21 on the host via our `ftp-server` container) which are written to `/home/krishna/scans/` on the server.
+2.  **Paperless Consumption**: Paperless-ngx mounts the HostPath directory `/home/krishna/scans/` directly as its internal consumption folder `/usr/src/paperless/consume`.
+3.  **Automatic OCR & Deletion**: As soon as a file is written to the folder, Paperless-ngx detects it, OCRs the file, registers it, and **automatically deletes the raw file** from `/home/krishna/scans/` to keep your scanner directory empty and clean.
+
+### Accessing Paperless-ngx:
+*   **Direct IP**: [http://192.168.50.120:8000/](http://192.168.50.120:8000/)
+*   **Local DNS**: [http://paperless.homelab/](http://paperless.homelab/)
+*   **Local Port Forward**: `./scripts/port-forward.sh paperless` (exposes it at `http://localhost:8000/`)
