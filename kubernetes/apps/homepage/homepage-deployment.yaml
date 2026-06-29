@@ -183,6 +183,7 @@ spec:
                 secretKeyRef:
                   name: beszel-credentials
                   key: password
+          volumeMounts:
             - name: config
               mountPath: /app/config/kubernetes.yaml
               subPath: kubernetes.yaml
