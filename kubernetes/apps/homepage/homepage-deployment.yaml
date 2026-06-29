@@ -60,6 +60,12 @@ data:
           cpu: true
           memory: true
           nodes: true
+          showLabel: true
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
 
   services.yaml: |
     - Infrastructure:
