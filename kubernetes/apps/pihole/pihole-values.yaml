@@ -44,10 +44,6 @@ ingress:
 extraEnvVars:
   TZ: "Asia/Kolkata"
   FTLCONF_dns_listeningMode: "all" # Required for Kubernetes to receive internal pod traffic
-  REV_SERVER: "true"
-  REV_SERVER_CIDR: "192.168.50.0/24"
-  REV_SERVER_TARGET: "192.168.50.1"
-  REV_SERVER_DOMAIN: "homelab"
 
 # Persistent Storage Configurations
 # Uses the K3s default 'local-path' provisioner which persists data across pod restarts.
