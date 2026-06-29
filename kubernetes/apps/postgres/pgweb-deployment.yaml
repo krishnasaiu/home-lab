@@ -40,13 +40,13 @@ spec:
             - containerPort: 8085
               name: http
           env:
-            - name: DATABASE_URL
-              value: "postgresql://postgres:$(DB_PASS)@postgres-service.default.svc.cluster.local:5432/postgres?sslmode=disable"
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: postgres-credentials
                   key: password
+            - name: PGWEB_DATABASE_URL
+              value: "postgresql://postgres:$(DB_PASS)@postgres-service.default.svc.cluster.local:5432/postgres?sslmode=disable"
           resources:
             limits:
               cpu: 500m
