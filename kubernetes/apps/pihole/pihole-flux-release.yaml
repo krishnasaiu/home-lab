@@ -97,6 +97,6 @@ spec:
             cpu: 50m
             memory: 64Mi
     extraVolumes:
-      - name: unbound-config-volume
+      unbound-config-volume:
         configMap:
           name: unbound-config
