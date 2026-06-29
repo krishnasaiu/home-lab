@@ -18,17 +18,17 @@ To replicate this homelab on a clean server, ensure your host satisfies the foll
 
 ### A. Hardware & OS
 *   **OS**: Debian Stable (Minimal/Standard installation).
-*   **Network**: A static LAN IP assigned to the server (we assume `192.168.50.120` in the configurations. If your IP is different, customize it inside `bootstrap/bootstrap-flux-cd.sh` or your local configurations).
+*   **Network**: A static LAN IP assigned to the server (referenced as `<server_ip>` in the guide).
 
 ### B. Required Host Directories
 Before applying manifests, create the local HostPath directories on the server to prevent volume mounting errors. Run the following on the host:
 ```bash
 # Create scanner intake folder and Home Assistant config folders
-mkdir -p /home/krishna/scans
-mkdir -p /home/krishna/homeassistant_config
+mkdir -p /home/<username>/scans
+mkdir -p /home/<username>/homeassistant_config
 
 # Set ownership to prevent container permission conflicts
-sudo chown -R krishna:krishna /home/krishna/scans /home/krishna/homeassistant_config
+sudo chown -R <username>:<username> /home/<username>/scans /home/<username>/homeassistant_config
 ```
 
 ---
@@ -63,7 +63,7 @@ Clone your repository onto the server and execute the K3s bootstrapper:
 
 ```bash
 # Clone your repository
-git clone https://github.com/krishnasaiu/home-lab.git
+git clone https://github.com/<your_github_username>/home-lab.git
 cd home-lab
 
 # Make the installer executable and run
@@ -90,7 +90,7 @@ Once the core database pod is running:
    kubectl exec -it deployment/postgres -n default -c postgres -- psql -U postgres -c "CREATE DATABASE paperless;"
    ```
 2. **Migrate Home Assistant to PostgreSQL**: 
-   Append the following to the bottom of `/home/krishna/homeassistant_config/configuration.yaml`:
+   Append the following to the bottom of `/home/<username>/homeassistant_config/configuration.yaml`:
    ```yaml
    recorder:
      db_url: !env_var DB_URL
@@ -105,10 +105,16 @@ Once the core database pod is running:
    ```bash
    kubectl exec -it deployment/paperless -n default -c paperless -- createsuperuser
    ```
-2. **Fetch Auto-Generated Passwords**: Print database or dashboard credentials:
+2. **Fetch Auto-Generated Passwords**: Print database, dashboard, or FTP credentials using the utility script:
    ```bash
-   # Usage: ./scripts/get-password.sh [pihole | postgres]
+   # Fetch Pi-hole admin interface password
    ./scripts/get-password.sh pihole
+
+   # Fetch PostgreSQL admin credentials
+   ./scripts/get-password.sh postgres
+
+   # Fetch Scanner FTP credentials
+   ./scripts/get-password.sh ftp
    ```
 
 ---
@@ -119,14 +125,14 @@ Once synchronized, all apps are exposed via **Traefik Ingress** (Port 80) and bo
 
 | Application | Local Port (Host IP) | Local DNS URL | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Homepage** | `http://192.168.50.120:3000/` | `http://dashboard.homelab/` | Unified Status Dashboard |
-| **Pi-hole Admin** | `http://192.168.50.120/admin/` | `http://pihole.homelab/admin/` | Ad-blocking & Local DNS Server |
-| **Home Assistant**| `http://192.168.50.120:8123/` | `http://homeassistant.homelab/` | Smart Home Hub |
-| **Vaultwarden** | `http://192.168.50.120:8080/` | `http://vaultwarden.homelab/` | Password Manager (Bitwarden) |
-| **Paperless-ngx** | `http://192.168.50.120:8000/` | `http://paperless.homelab/` | Document Archiver & OCR |
-| **pgweb Client** | `http://192.168.50.120:8085/` | `http://pgweb.homelab/` | Web PostgreSQL Console |
-| **Redis Commander**| `http://192.168.50.120:8086/` | `http://redis-commander.homelab/` | Web Redis Console |
-| **Cockpit Console**| `https://192.168.50.120:9090/` | N/A | Linux OS Dashboard |
+| **Homepage** | `http://<server_ip>:3000/` | `http://dashboard.homelab/` | Unified Status Dashboard |
+| **Pi-hole Admin** | `http://<server_ip>/admin/` | `http://pihole.homelab/admin/` | Ad-blocking & Local DNS Server |
+| **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.homelab/` | Smart Home Hub |
+| **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.homelab/` | Password Manager (Bitwarden) |
+| **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.homelab/` | Document Archiver & OCR |
+| **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.homelab/` | Web PostgreSQL Console |
+| **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.homelab/` | Web Redis Console |
+| **Cockpit Console**| `https://<server_ip>:9090/` | N/A | Linux OS Dashboard |
 
 ---
 
@@ -151,9 +157,9 @@ To manage the cluster using K9s (TUI Interface) directly from your macOS termina
 1. Copy the kubeconfig file to your Mac:
    ```bash
    mkdir -p ~/.kube
-   scp krishna@192.168.50.120:~/.kube/config ~/.kube/config-homelab
+   scp <username>@<server_ip>:~/.kube/config ~/.kube/config-homelab
    ```
-2. Replace `127.0.0.1` inside `~/.kube/config-homelab` with the server LAN IP `192.168.50.120`.
+2. Replace `127.0.0.1` inside `~/.kube/config-homelab` with your server LAN IP `<server_ip>`.
 3. Export the config path and load K9s:
    ```bash
    export KUBECONFIG=~/.kube/config-homelab
@@ -165,12 +171,12 @@ To manage the cluster using K9s (TUI Interface) directly from your macOS termina
 ## 6. Scanner & FTP Automation
 
 1.  **Scanner Uploads File**: Your physical network scanner uploads scans via FTP (using the parameter settings below).
-2.  **Paperless Consumption**: Files land in `/home/krishna/scans` on the Debian server. The Paperless-ngx container watches this directory, reads and OCRs the PDF document, and **deletes the raw scanner file** once imported.
+2.  **Paperless Consumption**: Files land in `/home/<username>/scans` on the Debian server. The Paperless-ngx container watches this directory, reads and OCRs the PDF document, and **deletes the raw scanner file** once imported.
 
 ### Scanner Connection Settings
 *   **Protocol**: FTP
-*   **Host Address**: `192.168.50.120`
+*   **Host Address**: `<server_ip>`
 *   **Port**: `21`
 *   **Username**: `scanner`
-*   **Password**: `password123` (Managed in `ftp-deployment.yaml`)
+*   **Password**: Automatically generated. Retrieve it by running `./scripts/get-password.sh ftp` on the host.
 *   **Path**: `/`
