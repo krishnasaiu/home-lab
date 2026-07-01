@@ -110,6 +110,11 @@ data:
               type: uptimekuma
               url: http://localhost:3001
               slug: default
+        - Dozzle Logs:
+            icon: dozzle
+            href: http://192.168.50.120:8888/
+            description: Real-time container logs
+            ping: http://192.168.50.120:8888/
     - Applications:
         - Home Assistant:
             icon: home-assistant

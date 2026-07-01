@@ -69,6 +69,7 @@ spec:
         - address=/redis-commander.homelab/${host_ip}
         - address=/beszel.homelab/${host_ip}
         - address=/status.homelab/${host_ip}
+        - address=/logs.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"

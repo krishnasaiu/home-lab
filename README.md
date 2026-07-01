@@ -169,6 +169,7 @@ Once synchronized, all apps are exposed via **Traefik Ingress** (Port 80) and bo
 | **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.homelab/` | Web Redis Console |
 | **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.homelab/` | Lightweight Server Resource Monitor |
 | **Cockpit Console**| `https://<server_ip>:9090/` | N/A | Linux OS Dashboard |
+| **Dozzle Logs**   | N/A                        | `http://logs.homelab/`            | Real-time Container Log Viewer      |
 
 ---
 
