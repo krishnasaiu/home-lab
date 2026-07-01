@@ -59,8 +59,8 @@ spec:
           env:
             - name: DOZZLE_MODE
               value: "k8s"
-            - name: DOZZLE_PORT
-              value: "8888"
+            - name: DOZZLE_ADDR
+              value: ":8888"
           resources:
             limits:
               cpu: 200m
