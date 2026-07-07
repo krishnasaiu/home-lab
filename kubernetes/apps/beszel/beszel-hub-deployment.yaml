@@ -74,7 +74,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: beszel.homelab
+    - host: beszel.local
       http:
         paths:
           - path: /

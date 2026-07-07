@@ -59,7 +59,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: redis-commander.homelab
+    - host: redis-commander.local
       http:
         paths:
           - path: /

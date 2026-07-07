@@ -28,6 +28,13 @@ default_config:
 # Database integration to redirect history to PostgreSQL
 recorder:
   db_url: !env_var DB_URL
+
+# Enable reverse proxy trust for Traefik Ingress
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 10.42.0.0/16     # K3s pod IP subnet
+    - 127.0.0.1        # Localhost
 EOF
 
 # Set permissions for volume mounts

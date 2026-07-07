@@ -174,7 +174,7 @@ spec:
               name: http
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "${host_ip},${host_ip}:3000,dashboard.homelab,dashboard.homelab:3000,localhost,localhost:3000,127.0.0.1,127.0.0.1:3000"
+              value: "${host_ip},${host_ip}:3000,dashboard.local,dashboard.local:3000,localhost,localhost:3000,127.0.0.1,127.0.0.1:3000"
             - name: HOMEPAGE_VAR_PIHOLE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -227,7 +227,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: dashboard.homelab
+    - host: dashboard.local
       http:
         paths:
           - path: /
