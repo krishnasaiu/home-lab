@@ -225,6 +225,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: dashboard.homelab
@@ -237,3 +238,7 @@ spec:
                 name: homepage-service
                 port:
                   number: 3000
+  tls:
+    - hosts:
+        - dashboard.homelab
+      secretName: homepage-tls

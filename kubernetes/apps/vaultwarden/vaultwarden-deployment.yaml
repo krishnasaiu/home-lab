@@ -80,6 +80,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: vaultwarden.homelab
@@ -92,3 +93,7 @@ spec:
                 name: vaultwarden-service
                 port:
                   number: 8080
+  tls:
+    - hosts:
+        - vaultwarden.homelab
+      secretName: vaultwarden-tls

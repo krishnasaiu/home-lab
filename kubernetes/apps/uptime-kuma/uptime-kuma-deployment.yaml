@@ -72,6 +72,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: status.homelab
@@ -84,3 +85,7 @@ spec:
                 name: uptime-kuma-service
                 port:
                   number: 3001
+  tls:
+    - hosts:
+        - status.homelab
+      secretName: status-tls

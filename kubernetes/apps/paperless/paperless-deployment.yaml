@@ -122,6 +122,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: paperless.homelab
@@ -134,3 +135,7 @@ spec:
                 name: paperless-service
                 port:
                   number: 8000
+  tls:
+    - hosts:
+        - paperless.homelab
+      secretName: paperless-tls

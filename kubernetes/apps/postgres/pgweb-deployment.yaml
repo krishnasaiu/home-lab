@@ -62,6 +62,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: pgweb.homelab
@@ -74,3 +75,7 @@ spec:
                 name: pgweb-service
                 port:
                   number: 8085
+  tls:
+    - hosts:
+        - pgweb.homelab
+      secretName: pgweb-tls

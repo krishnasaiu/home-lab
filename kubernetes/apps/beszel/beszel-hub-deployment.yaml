@@ -72,6 +72,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: beszel.homelab
@@ -84,3 +85,7 @@ spec:
                 name: beszel-hub-service
                 port:
                   number: 8090
+  tls:
+    - hosts:
+        - beszel.homelab
+      secretName: beszel-tls

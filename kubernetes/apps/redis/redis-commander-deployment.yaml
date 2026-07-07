@@ -57,6 +57,7 @@ metadata:
   namespace: default
   annotations:
     kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "local-ca-issuer"
 spec:
   rules:
     - host: redis-commander.homelab
@@ -69,3 +70,7 @@ spec:
                 name: redis-commander-service
                 port:
                   number: 8086
+  tls:
+    - hosts:
+        - redis-commander.homelab
+      secretName: redis-commander-tls
