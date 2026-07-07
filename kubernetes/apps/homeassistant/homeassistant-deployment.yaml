@@ -80,7 +80,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: homeassistant.local
+    - host: homeassistant.lan
       http:
         paths:
           - path: /

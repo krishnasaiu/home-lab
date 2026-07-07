@@ -105,8 +105,8 @@ check_http() {
     fi
 }
 
-check_http "http://127.0.0.1/admin/" "pihole.local" "Pi-hole Ingress"
-check_http "http://127.0.0.1/" "homeassistant.local" "Home Assistant Ingress"
+check_http "http://127.0.0.1/admin/" "pihole.lan" "Pi-hole Ingress"
+check_http "http://127.0.0.1/" "homeassistant.lan" "Home Assistant Ingress"
 check_http "http://127.0.0.1:8123/" "localhost" "Home Assistant Direct Port"
 
 # 5. Local DNS Resolution Checks
@@ -124,7 +124,7 @@ check_dns() {
     fi
 }
 
-check_dns "pihole.local"
-check_dns "homeassistant.local"
+check_dns "pihole.lan"
+check_dns "homeassistant.lan"
 
 echo -e "${CYAN}=================================================================${NC}"

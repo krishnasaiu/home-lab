@@ -124,7 +124,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: paperless.local
+    - host: paperless.lan
       http:
         paths:
           - path: /

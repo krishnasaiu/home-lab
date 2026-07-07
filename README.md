@@ -159,17 +159,17 @@ Once synchronized, all apps are exposed via **Traefik Ingress** (Port 80) and bo
 
 | Application | Local Port (Host IP) | Local DNS URL | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Homepage** | `http://<server_ip>:3000/` | `http://dashboard.local/` | Unified Status Dashboard |
-| **Pi-hole Admin** | `http://<server_ip>/admin/` | `http://pihole.local/admin/` | Ad-blocking & Local DNS Server |
-| **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.local/` | Smart Home Hub |
-| **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.local/` | Password Manager (Bitwarden) |
-| **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.local/` | Document Archiver & OCR |
-| **Uptime Kuma** | `http://<server_ip>:3001/` | `http://status.local/` | Service Availability Monitors |
-| **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.local/` | Web PostgreSQL Console |
-| **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.local/` | Web Redis Console |
-| **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.local/` | Lightweight Server Resource Monitor |
+| **Homepage** | `http://<server_ip>:3000/` | `http://dashboard.lan/` | Unified Status Dashboard |
+| **Pi-hole Admin** | `http://<server_ip>/admin/` | `http://pihole.lan/admin/` | Ad-blocking & Local DNS Server |
+| **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.lan/` | Smart Home Hub |
+| **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.lan/` | Password Manager (Bitwarden) |
+| **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.lan/` | Document Archiver & OCR |
+| **Uptime Kuma** | `http://<server_ip>:3001/` | `http://status.lan/` | Service Availability Monitors |
+| **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.lan/` | Web PostgreSQL Console |
+| **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.lan/` | Web Redis Console |
+| **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.lan/` | Lightweight Server Resource Monitor |
 | **Cockpit Console**| `https://<server_ip>:9090/` | N/A | Linux OS Dashboard |
-| **Dozzle Logs**   | N/A                        | `http://logs.local/`            | Real-time Container Log Viewer      |
+| **Dozzle Logs**   | N/A                        | `http://logs.lan/`            | Real-time Container Log Viewer      |
 
 ---
 

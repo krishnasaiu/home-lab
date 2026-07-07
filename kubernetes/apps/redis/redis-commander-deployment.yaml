@@ -59,7 +59,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: redis-commander.local
+    - host: redis-commander.lan
       http:
         paths:
           - path: /

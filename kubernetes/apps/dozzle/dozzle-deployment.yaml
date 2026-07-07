@@ -91,7 +91,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: logs.local
+    - host: logs.lan
       http:
         paths:
           - path: /
