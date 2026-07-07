@@ -159,17 +159,17 @@ Once synchronized, all apps are exposed via **Traefik Ingress** (Port 80) and bo
 
 | Application | Local Port (Host IP) | Local DNS URL | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Homepage** | `http://<server_ip>:3000/` | `http://dashboard.lan/` | Unified Status Dashboard |
-| **Pi-hole Admin** | `http://<server_ip>/admin/` | `http://pihole.lan/admin/` | Ad-blocking & Local DNS Server |
-| **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.lan/` | Smart Home Hub |
-| **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.lan/` | Password Manager (Bitwarden) |
-| **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.lan/` | Document Archiver & OCR |
-| **Uptime Kuma** | `http://<server_ip>:3001/` | `http://status.lan/` | Service Availability Monitors |
-| **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.lan/` | Web PostgreSQL Console |
-| **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.lan/` | Web Redis Console |
-| **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.lan/` | Lightweight Server Resource Monitor |
+| **Homepage** | `http://<server_ip>:3000/` | `http://dashboard.homelab/` | Unified Status Dashboard |
+| **Pi-hole Admin** | `http://<server_ip>/admin/` | `http://pihole.homelab/admin/` | Ad-blocking & Local DNS Server |
+| **Home Assistant**| `http://<server_ip>:8123/` | `http://homeassistant.homelab/` | Smart Home Hub |
+| **Vaultwarden** | `http://<server_ip>:8080/` | `http://vaultwarden.homelab/` | Password Manager (Bitwarden) |
+| **Paperless-ngx** | `http://<server_ip>:8000/` | `http://paperless.homelab/` | Document Archiver & OCR |
+| **Uptime Kuma** | `http://<server_ip>:3001/` | `http://status.homelab/` | Service Availability Monitors |
+| **pgweb Client** | `http://<server_ip>:8085/` | `http://pgweb.homelab/` | Web PostgreSQL Console |
+| **Redis Commander**| `http://<server_ip>:8086/` | `http://redis-commander.homelab/` | Web Redis Console |
+| **Beszel Hub** | `http://<server_ip>:8090/` | `http://beszel.homelab/` | Lightweight Server Resource Monitor |
 | **Cockpit Console**| `https://<server_ip>:9090/` | N/A | Linux OS Dashboard |
-| **Dozzle Logs**   | N/A                        | `http://logs.lan/`            | Real-time Container Log Viewer      |
+| **Dozzle Logs**   | N/A                        | `http://logs.homelab/`            | Real-time Container Log Viewer      |
 
 ---
 

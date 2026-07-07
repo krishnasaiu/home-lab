@@ -91,7 +91,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: logs.lan
+    - host: logs.homelab
       http:
         paths:
           - path: /

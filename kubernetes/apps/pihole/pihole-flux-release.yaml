@@ -60,16 +60,16 @@ spec:
       size: 5Gi
     dnsmasq:
       customDnsEntries:
-        - address=/pihole.lan/${host_ip}
-        - address=/homeassistant.lan/${host_ip}
-        - address=/vaultwarden.lan/${host_ip}
-        - address=/paperless.lan/${host_ip}
-        - address=/dashboard.lan/${host_ip}
-        - address=/pgweb.lan/${host_ip}
-        - address=/redis-commander.lan/${host_ip}
-        - address=/beszel.lan/${host_ip}
-        - address=/status.lan/${host_ip}
-        - address=/logs.lan/${host_ip}
+        - address=/pihole.homelab/${host_ip}
+        - address=/homeassistant.homelab/${host_ip}
+        - address=/vaultwarden.homelab/${host_ip}
+        - address=/paperless.homelab/${host_ip}
+        - address=/dashboard.homelab/${host_ip}
+        - address=/pgweb.homelab/${host_ip}
+        - address=/redis-commander.homelab/${host_ip}
+        - address=/beszel.homelab/${host_ip}
+        - address=/status.homelab/${host_ip}
+        - address=/logs.homelab/${host_ip}
       persistentVolumeClaim:
         enabled: true
         storageClass: "local-path"

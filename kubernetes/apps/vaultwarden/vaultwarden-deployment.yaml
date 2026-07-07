@@ -82,7 +82,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: vaultwarden.lan
+    - host: vaultwarden.homelab
       http:
         paths:
           - path: /

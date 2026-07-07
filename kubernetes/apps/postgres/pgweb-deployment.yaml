@@ -64,7 +64,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-    - host: pgweb.lan
+    - host: pgweb.homelab
       http:
         paths:
           - path: /
