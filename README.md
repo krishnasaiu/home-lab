@@ -204,20 +204,20 @@ To manage the cluster using K9s (TUI Interface) directly from your macOS termina
    ```
 
 ### C. Trusting the Local Certificate Authority (Root CA) for HTTPS
-To enable green trusted padlocks and bypass browser warning screens on your local devices:
+To enable green trusted padlocks and secure connections on your devices:
 1.  **Extract the Root CA certificate** from your cluster to your Mac:
     ```bash
     kubectl --kubeconfig=~/.kube/config-homelab get secret homelab-ca-secret -n cert-manager -o jsonpath="{.data['ca\.crt']}" | base64 --decode > root.crt
     ```
 2.  **Trust it on your Mac**:
-    Run this in your terminal to install the certificate in your system keychain as a trusted root:
+    Install the certificate into your system keychain as a trusted root:
     ```bash
     sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain root.crt
     ```
-3.  **Trust it on Firefox**:
-    Firefox maintains its own certificate store by default. To make it trust the system keychain roots:
-    *   Open Firefox, type `about:config` in the address bar and accept the risk warning.
-    *   Search for `security.enterprise_roots.enabled` and double-click to set it to **`true`**.
+3.  **Trust it on iOS (iPhone/iPad)**:
+    *   AirDrop `root.crt` from your Mac to your iOS device.
+    *   Open the file on iOS, go to **Settings** → **VPN & Device Management** and install the **homelab-ca-root** profile.
+    *   Go to **Settings** → **General** → **About** → **Certificate Trust Settings**, and toggle the switch to enable full trust for **`homelab-ca-root`**.
 
 ---
 

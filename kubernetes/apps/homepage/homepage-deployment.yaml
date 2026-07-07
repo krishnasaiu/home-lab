@@ -70,7 +70,7 @@ data:
     - Infrastructure:
         - Pi-hole:
             icon: pi-hole
-            href: http://192.168.50.120/admin/
+            href: https://pihole.homelab/admin/
             description: Ad Blocker & DNS
             widget:
               type: pihole
@@ -79,20 +79,20 @@ data:
               version: 6
         - PostgreSQL:
             icon: postgresql
-            href: http://192.168.50.120:8085/
+            href: https://pgweb.homelab/
             description: Relational Database
         - Redis Cache:
             icon: redis
-            href: http://192.168.50.120:8086/
+            href: https://redis-commander.homelab/
             description: Centralized Cache / MQ
         - Cockpit:
             icon: cockpit
-            href: http://192.168.50.120:9090/
+            href: https://192.168.50.120:9090/
             description: Host Administration
-            ping: http://192.168.50.120:9090/
+            ping: https://192.168.50.120:9090/
         - Beszel Monitor:
             icon: beszel
-            href: http://192.168.50.120:8090/
+            href: https://beszel.homelab/
             description: Resource Monitoring
             widget:
               type: beszel
@@ -104,7 +104,7 @@ data:
               fields: ["cpu", "memory", "disk", "network"]
         - Uptime Kuma:
             icon: uptime-kuma
-            href: http://192.168.50.120:3001/
+            href: https://status.homelab/
             description: Service Availability
             widget:
               type: uptimekuma
@@ -112,25 +112,25 @@ data:
               slug: default
         - Dozzle Logs:
             icon: dozzle
-            href: http://192.168.50.120:8888/
+            href: https://logs.homelab/
             description: Real-time container logs
-            ping: http://192.168.50.120:8888/
+            ping: https://logs.homelab/
     - Applications:
         - Home Assistant:
             icon: home-assistant
-            href: http://192.168.50.120:8123/
+            href: https://homeassistant.homelab/
             description: Smart Home Hub
-            ping: http://192.168.50.120:8123/
+            ping: https://homeassistant.homelab/
         - Vaultwarden:
             icon: vaultwarden
-            href: http://192.168.50.120:8080/
+            href: https://vaultwarden.homelab/
             description: Password Manager
-            ping: http://192.168.50.120:8080/
+            ping: https://vaultwarden.homelab/
         - Paperless-ngx:
             icon: paperless
-            href: http://192.168.50.120:8000/
+            href: https://paperless.homelab/
             description: Document Archiver
-            ping: http://192.168.50.120:8000/
+            ping: https://paperless.homelab/
 ---
 apiVersion: v1
 kind: Service
